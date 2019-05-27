@@ -1,0 +1,13 @@
+{
+  "input_files": [],
+  "regressor_files": [],
+  "regressors": [],
+  "roi_labels": [],
+  "as_voxels": false,
+  "standardize": true,
+  "t_r": null,
+  "high_pass": null,
+  "low_pass": null,
+  "detrend": false,
+  "smoothing_fwhm": null
+}
