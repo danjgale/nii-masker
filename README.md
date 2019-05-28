@@ -4,13 +4,13 @@ This is a simple command-line wrapper for `nilearn`'s [Masker object](https://ni
 
 ## Installation
 
-First, download this repository to a directory. Then, run `pip install .` to install `niimasker`.
+First, download this repository to a directory. Then, navigate to the directory and run `pip install .` to install `niimasker`.
 
 ## Running `niimasker`
 
-In order to run `niimasker`, you will need to specify an input directory, and output directory, and a configuration file (see `config_template.json`). This can be run into the command-line as so:
+In order to run `niimasker`, you will need to specify a configuration file (see `config_template.json`) and an output directory. This can be run into the command-line as so:
 
-`niimasker /path/to/input /path/to/output config.json`
+`niimasker config.json /path/to/output `
 
 ## Configuring `niimasker`
 
