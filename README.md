@@ -19,6 +19,7 @@ Coming soon.
 ## Upcoming features
 
 - Expanded command-line arguments
+- Built-in support for atlases that can be fetched directly from `nilearn`
 - A comprehensive visual report (as an `html` file) in order to get a birds-eye view of the timecourses. Easily check for quality issues (e.g., amplitude spikes from motion) and how the data were generated
 - Option to include event files (similar to what SPM or FSL require for first-level analyses) that labels each timepoint based on the task and conditions (only relevant for task-based fMRI).
 - Full [fmriprep](https://fmriprep.readthedocs.io/en/stable/) and [BIDS](http://bids.neuroimaging.io/) support, such that confound and event files are detected automatically based on the input NIfTI.
