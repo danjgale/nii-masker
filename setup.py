@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='rextract',
+    name='niimasker',
     version='0.0.1',
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
@@ -9,6 +9,13 @@ setup(
     author='Dan Gale',
     long_description=open('README.md').read(),
     url='https://github.com/danjgale/roi-extractor',
+    install_requires=[
+        'numpy',
+        'pandas',
+        'nibabel',
+        'nilearn',
+        'natsort'
+    ],
     tests_require=[
         'pytest',
         'pytest-cov'
@@ -16,7 +23,7 @@ setup(
     setup_requires=['pytest-runner'],
     entry_points={
             'console_scripts': [
-                'rextract=rextract.cli:main'
+                'niimasker=niimasker.cli:main'
             ]
         }
 )

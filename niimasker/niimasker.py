@@ -27,7 +27,6 @@ def _build_regressors(fname, regressor_names, motion_derivatives=False):
 
 def _set_masker(roi_img, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
-
     n_rois = np.unique(roi_img.get_data())
     print('{} regions detected from ROI file'.format(n_rois))
 
@@ -43,7 +42,6 @@ def _set_masker(roi_img, **kwargs):
 
 def _mask(masker, img, regressors=None, roi_labels=None, as_voxels=False):
     """Extract timeseries from an image and apply post-processing"""
-
     timeseries = masker.fit_transform(img, confounds=regressors)
 
     if isinstance(masker, NiftiMasker):
@@ -96,9 +94,3 @@ def extract_data(input_files, roi_file, output_dir, roi_labels=None,
         data = _mask(masker, img, regressors, roi_labels, as_voxels)
         out_fname = os.path.basename(input_files).split('.')[0] + '_timeseries.tsv'
         data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)
-
-
-
-
-
-

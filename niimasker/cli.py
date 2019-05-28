@@ -6,7 +6,7 @@ import json
 import glob
 from natsort import natsorted
 
-from rextract.rextract import extract_data
+from niimasker.niimasker import extract_data
 
 def _rextract_parser():
     """Reads command line arguments and returns input specifications"""
