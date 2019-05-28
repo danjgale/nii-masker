@@ -1,8 +1,9 @@
 {
   "input_files": [],
+  "roi_file": "",
+  "roi_labels": [],
   "regressor_files": [],
   "regressors": [],
-  "roi_labels": [],
   "as_voxels": false,
   "standardize": true,
   "t_r": null,
