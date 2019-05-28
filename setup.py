@@ -13,5 +13,11 @@ setup(
         'pytest',
         'pytest-cov'
     ],
-    setup_requires=['pytest-runner']
+    setup_requires=['pytest-runner'],
+    entry_points={
+            'console_scripts': [
+                'rextract=rextract.cli:main'
+            ]
+        }
 )
+
