@@ -5,6 +5,7 @@ series data.
 import os
 import numpy as np
 import pandas as pd
+from nilearn.image import load_img
 from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
 ## CONFOUND REGRESSOR FUNCTIONS
@@ -28,7 +29,7 @@ def _build_regressors(fname, regressor_names, motion_derivatives=False):
 def _set_masker(roi_img, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
     n_rois = np.unique(roi_img.get_data())
-    print('{} regions detected from ROI file'.format(n_rois))
+    print('{} region(s) detected from ROI file'.format(len(n_rois) - 1))
 
     if len(n_rois) > 2:
         masker = NiftiLabelsMasker(roi_img, **kwargs)
@@ -50,7 +51,7 @@ def _mask(masker, img, regressors=None, roi_labels=None, as_voxels=False):
                       for i in np.arange(timeseries.shape[1])]
         else:
             timeseries = np.mean(timeseries, axis=1)
-            labels = 'roi' if roi_labels is None else roi_labels
+            labels = ['roi'] if roi_labels is None else roi_labels
     else:
         labels = masker.labels_ if roi_labels is None else roi_labels
 
@@ -87,10 +88,19 @@ def extract_data(input_files, roi_file, output_dir, roi_labels=None,
         not for atlas images (yet)
     """
     os.makedirs(output_dir, exist_ok=True)
-    masker = _set_masker(roi_file, **masker_kwargs)
+    roi_img = load_img(roi_file)
+    masker = _set_masker(roi_img, **masker_kwargs)
 
     for i, img in enumerate(input_files):
-        regressors = _build_regressors(regressor_files[i], regressors)
-        data = _mask(masker, img, regressors, roi_labels, as_voxels)
-        out_fname = os.path.basename(input_files).split('.')[0] + '_timeseries.tsv'
+
+        basename = os.path.basename(img)
+        print('Extracting from {}'.format(basename))
+
+        if regressor_files is not None:
+            confounds = _build_regressors(regressor_files[i], regressors)
+        else:
+            confounds = None
+        data = _mask(masker, img, confounds, roi_labels, as_voxels)
+
+        out_fname = basename.split('.')[0] + '_timeseries.tsv'
         data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)

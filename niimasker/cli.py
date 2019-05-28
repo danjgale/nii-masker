@@ -8,13 +8,9 @@ from natsort import natsorted
 
 from niimasker.niimasker import extract_data
 
-def _rextract_parser():
+def _cli_parser():
     """Reads command line arguments and returns input specifications"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_dir', type=str, metavar='input_dir',
-                        help='The path to the input directory. IMPORTANT: the'
-                             'paths specified in the configuration file are'
-                             'relative to the input directory')
     parser.add_argument('output_dir', type=str, metavar='output_dir',
                         help='The path to the output directory')
     parser.add_argument('config', type=str.lower, metavar='config',
@@ -39,23 +35,26 @@ def _read_config(fname):
         conf = json.load(f)
 
     conf['input_files'] = _check_glob(conf['input_files'])
-    conf['regressor_files'] = _check_glob(conf['regressor_files'])
+    if conf['regressor_files'] is not None:
+        conf['regressor_files'] = _check_glob(conf['regressor_files'])
     return conf
 
 
 def main():
     """Primary entrypoint in program"""
-    opts = _rextract_parser()
+    opts = _cli_parser()
     params = _read_config(opts.config)
 
-    opts.input_dir
-    params['output_file'] = opts.output_file
+    params['output_dir'] = opts.output_dir
 
-    # append input directory
-    params['input_files'] = [os.path.join(opts.input_dir, i) for i in
-                             params['input_files']]
-    params['regressor_files'] = [os.path.join(opts.input_dir, i) for i in
-                                 params['regressor_files']]
+    # # append input directory
+    # params['input_files'] = [os.path.join(opts.input_dir, i) for i in
+    #                          params['input_files']]
+    # params
+
+    # if params['regressor_files'] is not None:
+    #     params['regressor_files'] = [os.path.join(opts.input_dir, i) for i in
+    #                                  params['regressor_files']]
 
     extract_data(**params)
 
