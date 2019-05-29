@@ -16,72 +16,72 @@ def _cli_parser():
                         help='The path to the output directory')
     parser.add_argument('-i', '--input_files', nargs='+', type=str,
                         metavar='input_files',
-                        help='One or more input NIfTI images. Can also be a'
-                             'single string with a wildcard (*) to specify all'
-                             'files matching the file pattern. If so, these'
-                             'files are naturally sorted by file name prior to'
+                        help='One or more input NIfTI images. Can also be a '
+                             'single string with a wildcard (*) to specify all '
+                             'files matching the file pattern. If so, these '
+                             'files are naturally sorted by file name prior to '
                              'extraction.')
     parser.add_argument('-m', '--mask', type=str, metavar='mask',
-                        help='File path of the atlas/ROI mask. Can either be a'
-                             'single ROI mask that is binary, or an atlas with'
-                             'numeric labels. Must be a sinlge NIfTI file in'
+                        help='File path of the atlas/ROI mask. Can either be a '
+                             'single ROI mask that is binary, or an atlas with '
+                             'numeric labels. Must be a sinlge NIfTI file in '
                              'the same space as the input images.')
     parser.add_argument('--labels', nargs='+', type=str, metavar='labels',
-                        help='Labels corresponding to the mask numbers in'
-                             '`mask`. They must be sorted in ascending order'
-                             'to correctly correspond to the atlas indices. The'
-                             'number of labels provided must match the number'
+                        help='Labels corresponding to the mask numbers in '
+                             '`mask`. They must be sorted in ascending order '
+                             'to correctly correspond to the atlas indices. The '
+                             'number of labels provided must match the number '
                              'of non-zero indices in `mask`.')
     parser.add_argument('--regressor_files', nargs='+', type=str,
                         metavar='regressor_files',
-                        help='One or more tabular files with regressors in each'
-                             'column. The number of files match the number of'
-                             'input NIfTI files provided and must be in the'
-                             'same order. The number of rows in each file must'
-                             'match the number of timepoints in their'
-                             'respective input NIfTI files. Can also be a'
-                             'single string with a wildcard (*) to specify all'
-                             'files matching the file pattern. If so, these'
-                             'files are naturally sorted by file name prior to'
-                             'extraction. Double check to make sure these are'
+                        help='One or more tabular files with regressors in each '
+                             'column. The number of files match the number of '
+                             'input NIfTI files provided and must be in the '
+                             'same order. The number of rows in each file must '
+                             'match the number of timepoints in their '
+                             'respective input NIfTI files. Can also be a '
+                             'single string with a wildcard (*) to specify all '
+                             'files matching the file pattern. If so, these '
+                             'files are naturally sorted by file name prior to '
+                             'extraction. Double check to make sure these are '
                              'correctly aligned with the input NIfTI files.')
     parser.add_argument('--regressor_names', nargs='+', type=str,
                         metavar='regressor_names',
                         help='The regressor names to use for confound '
-                             'regression. Applies to all regressor files and'
-                             'the names must correspond to headers in each'
+                             'regression. Applies to all regressor files and '
+                             'the names must correspond to headers in each '
                              'file')
     parser.add_argument('--as_voxels', type=bool, metavar='as_voxels',
                         default=False, help='Whether to extract out the '
-                                            'timeseries of each voxel instead'
-                                            'of the mean timeseries. This is'
-                                            'only available for single ROI'
+                                            'timeseries of each voxel instead '
+                                            'of the mean timeseries. This is '
+                                            'only available for single ROI '
                                             'binary masks. Default False.')
     parser.add_argument('--standardize', type=bool, metavar='standardize',
-                        default=False, help='Whether to standardize (z-score)'
+                        default=False, help='Whether to standardize (z-score) '
                                             'each timeseries. Default False')
     parser.add_argument('--t_r', type=int, metavar='t_r',
-                        help='The TR of the input NIfTI files. Must be included'
+                        help='The TR of the input NIfTI files. Must be included '
                              'if temporal filtering is specified.')
     parser.add_argument('--high_pass', type=float, metavar='high_pass',
                         help='High pass filter cut off in Hertz. If not'
                              'specified, no filtering is done.')
     parser.add_argument('--low_pass', type=float, metavar='low_pass',
-                        help='Low pass filter cut off in Hertz. If not'
+                        help='Low pass filter cut off in Hertz. If not '
                              'specified, no filtering is done.')
     parser.add_argument('--detrend', type=bool, metavar='detrend',
-                        default=False, help='Whether to detrend the data.'
+                        default=False, help='Whether to detrend the data. '
                                             'Default False')
     parser.add_argument('--smoothing_fwhm', type=float, metavar='smoothing_fwhm',
-                        help='Smoothing kernel FWHM (in mm) if spatial smoothing'
-                             'is desired. If not specified, no smoothing is'
+                        help='Smoothing kernel FWHM (in mm) if spatial smoothing '
+                             'is desired. If not specified, no smoothing is '
                              'performed.')
     parser.add_argument('--discard_scans', type=int, metavar='discard_scans',
-                        help='Discard the first N scans of each functional'
+                        help='Discard the first N scans of each functional '
                              'NIfTI image.')
     parser.add_argument('-c', '--config', type=str.lower, metavar='config',
-                        help='Configuration .json file as an alternative to'
-                             'command-line arguments. See online documentation'
+                        help='Configuration .json file as an alternative to '
+                             'command-line arguments. See online documentation '
                              'for what keys to include.')
     return parser.parse_args()
 
