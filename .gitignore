@@ -3,3 +3,4 @@ __pycache__/
 .vscode/
 .eggs/
 niimasker.egg-info
+playground/
