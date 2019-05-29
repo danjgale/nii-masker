@@ -84,9 +84,17 @@ optional arguments:
                         to include.
 ```
 
-Most of the arguments map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail), with the exception of `--discard_scans`, which lets you remove the first *N* scans of your data prior to extraction, and `--as_voxels`, which lets you get individual voxel timeseries when using a single ROI.
+Most of the arguments map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you
+label your ROIs instead or just using the numerical indices.
 
 Of course, if you want have full `nilearn` flexibility, you're better off using `nilearn` and Python directly.
+
+**Required arguments**
+-  `ouput_dir`, specified by command-line only
+- `input_files`, can be specified by the command-line or by a configuration file
+- `mask_img`, can be specified by the command-line or by a configuration file
+
+All other arguments are optional.
 
 ## The configuration JSON file
 Online documentation coming soon.

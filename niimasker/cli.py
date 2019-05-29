@@ -31,7 +31,8 @@ def _cli_parser():
                              '`mask`. They must be sorted in ascending order '
                              'to correctly correspond to the atlas indices. The '
                              'number of labels provided must match the number '
-                             'of non-zero indices in `mask`.')
+                             'of non-zero indices in `mask`. If none are '
+                             'provided, numeric indices are used')
     parser.add_argument('--regressor_files', nargs='+', type=str,
                         metavar='regressor_files',
                         help='One or more tabular files with regressors in each '
@@ -104,8 +105,8 @@ def _check_params(params):
     else:
         params['input_files'] = _check_glob(params['input_files'])
 
-    if 'mask' not in params:
-        raise ValueError('Missing mask file (flag -m)')
+    if 'mask_img' not in params:
+        raise ValueError('Missing mask file (flag -m, --mask_img)')
 
     if params['regressor_files'] is not None:
         params['regressor_files'] = _check_glob(params['regressor_files'])
