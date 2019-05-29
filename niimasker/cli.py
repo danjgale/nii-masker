@@ -53,9 +53,9 @@ def _cli_parser():
                              'the names must correspond to headers in each '
                              'file')
     parser.add_argument('--motion_derivs', type=bool, metavar='motion_derivs',
-                        default=False, help='Whether to include derivatives of '
-                                            'motion regressors. t_r must be '
-                                            'specified.')
+                        default=False, help='Whether to include temporal '
+                                            'derivatives of motion regressors. '
+                                            '--t_r must be specified.')
     parser.add_argument('--as_voxels', type=bool, metavar='as_voxels',
                         default=False, help='Whether to extract out the '
                                             'timeseries of each voxel instead '
@@ -66,8 +66,9 @@ def _cli_parser():
                         default=False, help='Whether to standardize (z-score) '
                                             'each timeseries. Default False')
     parser.add_argument('--t_r', type=int, metavar='t_r',
-                        help='The TR of the input NIfTI files. Must be included '
-                             'if temporal filtering is specified.')
+                        help='The TR of the input NIfTI files, specified in '
+                             'seconds. Must be included if temporal filtering '
+                             'or motion derivatives are specified.')
     parser.add_argument('--high_pass', type=float, metavar='high_pass',
                         help='High pass filter cut off in Hertz. If not'
                              'specified, no filtering is done.')

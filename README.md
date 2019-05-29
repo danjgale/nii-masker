@@ -15,8 +15,9 @@ usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
-                 [--as_voxels as_voxels] [--standardize standardize]
-                 [--t_r t_r] [--high_pass high_pass] [--low_pass low_pass]
+                 [--motion_derivs motion_derivs] [--as_voxels as_voxels]
+                 [--standardize standardize] [--t_r t_r]
+                 [--high_pass high_pass] [--low_pass low_pass]
                  [--detrend detrend] [--smoothing_fwhm smoothing_fwhm]
                  [--discard_scans discard_scans] [-c config]
                  output_dir
@@ -57,6 +58,9 @@ optional arguments:
                         The regressor names to use for confound regression.
                         Applies to all regressor files and the names must
                         correspond to headers in each file
+  --motion_derivs motion_derivs
+                        Whether to include temporal derivatives of motion
+                        regressors. --t_r must be specified.
   --as_voxels as_voxels
                         Whether to extract out the timeseries of each voxel
                         instead of the mean timeseries. This is only available
@@ -64,8 +68,9 @@ optional arguments:
   --standardize standardize
                         Whether to standardize (z-score) each timeseries.
                         Default False
-  --t_r t_r             The TR of the input NIfTI files. Must be included if
-                        temporal filtering is specified.
+  --t_r t_r             The TR of the input NIfTI files, specified in seconds.
+                        Must be included if temporal filtering or motion
+                        derivatives are specified.
   --high_pass high_pass
                         High pass filter cut off in Hertz. If notspecified, no
                         filtering is done.

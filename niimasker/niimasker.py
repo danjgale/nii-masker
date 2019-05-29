@@ -13,18 +13,13 @@ from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
 def _compute_motion_derivs(regressors, t_r):
     """Compute derivatives from motion parameters"""
-
     cols = [i for i in regressors.columns if ('rot' in i) | ('trans' in i)]
-    motion = regressors[cols]
-
-    time_diff = np.zeros(motion.shape) + t_r
-    derivs = np.diff(motion, axis=0) / time_diff
-
-    derivs = np.vstack([np.full(derivs.shape[1], np.nan), derivs])
-
+    motion = regressors[cols].values
+    # compute central differences with sample distances = TR
+    derivs = np.gradient(motion, axis=0, varargs=t_r)
     deriv_cols = ['{}_d'.format(i) for i in cols]
-    deriv_df = pd.DataFrame(derivs, columns=deriv_cols)
-    return pd.concat([regressors, derivs], axis=1)
+    return pd.concat([regressors, pd.DataFrame(derivs, columns=deriv_cols)],
+                     axis=1)
 
 
 def _build_regressors(fname, regressor_names, motion_derivatives=False,
