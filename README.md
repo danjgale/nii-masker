@@ -1,6 +1,6 @@
 # nii-masker
 
-This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while providing several options for applying additional post-processing (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend many of `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
+This is a simple command-line wrapper for `nilearn`'s [Masker objects](https://nilearn.github.io/manipulating_images/masker_objects.html), which let you easily extract out region-of-interest (ROI) timeseries from functional MRI data while providing several options for applying additional post-processing (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend many of `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
 
 # Documentation
 
