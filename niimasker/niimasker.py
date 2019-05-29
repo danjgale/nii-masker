@@ -11,17 +11,29 @@ from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
 ## CONFOUND REGRESSOR FUNCTIONS
 
-def _compute_motion_derivs():
+def _compute_motion_derivs(regressors, t_r):
     """Compute derivatives from motion parameters"""
-    pass
+
+    cols = [i for i in regressors.columns if ('rot' in i) | ('trans' in i)]
+    motion = regressors[cols]
+
+    time_diff = np.zeros(motion.shape) + t_r
+    derivs = np.diff(motion, axis=0) / time_diff
+
+    derivs = np.vstack([np.full(derivs.shape[1], np.nan), derivs])
+
+    deriv_cols = ['{}_d'.format(i) for i in cols]
+    deriv_df = pd.DataFrame(derivs, columns=deriv_cols)
+    return pd.concat([regressors, derivs], axis=1)
 
 
-def _build_regressors(fname, regressor_names, motion_derivatives=False):
+def _build_regressors(fname, regressor_names, motion_derivatives=False,
+                      t_r=None):
     """Create regressors for masking"""
     all_regressors = pd.read_csv(fname, sep=r'\t')
     regressors = all_regressors[regressor_names]
-    # if motion_derivatives:
-    #     regressors = _compute_motion_derivs(regressors)
+    if motion_derivatives:
+        regressors = _compute_motion_derivs(regressors, t_r)
     return regressors.values
 
 
@@ -77,7 +89,7 @@ def _discard_initial_scans(img, n_scans, regressors=None):
 
 def extract_data(input_files, mask_img, output_dir, labels=None,
                  regressor_files=None, regressor_names=None, as_voxels=False,
-                 discard_scans=None, **masker_kwargs):
+                 discard_scans=None, motion_derivs=False, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s).
 
@@ -115,13 +127,15 @@ def extract_data(input_files, mask_img, output_dir, labels=None,
         img = nib.load(img)
 
         if regressor_files is not None:
-            confounds = _build_regressors(regressor_files[i], regressor_names)
+            confounds = _build_regressors(regressor_files[i], regressor_names,
+                                          motion_derivs, masker_kwargs['t_r'])
         else:
             confounds = None
 
-        if (discard_scans is not None) | (discard_scans > 0):
-            img, confounds = _discard_initial_scans(img, discard_scans,
-                                                    confounds)
+        if discard_scans is not None:
+            if discard_scans > 0:
+                img, confounds = _discard_initial_scans(img, discard_scans,
+                                                        confounds)
 
         data = _mask(masker, img, confounds, labels, as_voxels)
 

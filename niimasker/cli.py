@@ -52,6 +52,10 @@ def _cli_parser():
                              'regression. Applies to all regressor files and '
                              'the names must correspond to headers in each '
                              'file')
+    parser.add_argument('--motion_derivs', type=bool, metavar='motion_derivs',
+                        default=False, help='Whether to include derivatives of '
+                                            'motion regressors. t_r must be '
+                                            'specified.')
     parser.add_argument('--as_voxels', type=bool, metavar='as_voxels',
                         default=False, help='Whether to extract out the '
                                             'timeseries of each voxel instead '
@@ -149,5 +153,5 @@ def main():
 
 
 if __name__ == '__main__':
-    raise RuntimeError("`niimasker/cli.py` should not be run directly. Please"
+    raise RuntimeError("`niimasker/cli.py` should not be run directly. Please "
                        "`pip install` rextract and use the `rextract` command.")
