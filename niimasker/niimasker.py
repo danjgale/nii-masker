@@ -75,7 +75,7 @@ def _discard_initial_scans(img, n_scans, regressors=None):
     return out_img, out_reg
 
 
-def extract_data(input_files, mask, output_dir, labels=None,
+def extract_data(input_files, mask_img, output_dir, labels=None,
                  regressor_files=None, regressor_names=None, as_voxels=False,
                  discard_scans=None, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
@@ -105,7 +105,7 @@ def extract_data(input_files, mask, output_dir, labels=None,
         not for atlas images (yet)
     """
     os.makedirs(output_dir, exist_ok=True)
-    mask_img = load_img(mask)
+    mask_img = load_img(mask_img)
     masker = _set_masker(mask_img, **masker_kwargs)
 
     for i, img in enumerate(input_files):

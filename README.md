@@ -1,6 +1,6 @@
 # nii-masker
 
-This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while providing several options for applying additional post-processing (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
+This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while providing several options for applying additional post-processing (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend many of `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
 
 # Documentation
 
@@ -11,7 +11,7 @@ First, download this repository to a directory. Then, navigate to the directory,
 `niimasker` can be run via the command-line and can take the following arguments:
 
 ```
-usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask]
+usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
@@ -31,7 +31,8 @@ optional arguments:
                         string with a wildcard (*) to specify all files
                         matching the file pattern. If so, these files are
                         naturally sorted by file name prior to extraction.
-  -m mask, --mask mask  File path of the atlas/ROI mask. Can either be a
+  -m mask_img, --mask_img mask_img
+                        File path of the atlas/ROI mask. Can either be a
                         single ROI mask that is binary, or an atlas with
                         numeric labels. Must be a sinlge NIfTI file in the
                         same space as the input images.

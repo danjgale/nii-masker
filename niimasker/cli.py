@@ -21,7 +21,7 @@ def _cli_parser():
                              'files matching the file pattern. If so, these '
                              'files are naturally sorted by file name prior to '
                              'extraction.')
-    parser.add_argument('-m', '--mask', type=str, metavar='mask',
+    parser.add_argument('-m', '--mask_img', type=str, metavar='mask_img',
                         help='File path of the atlas/ROI mask. Can either be a '
                              'single ROI mask that is binary, or an atlas with '
                              'numeric labels. Must be a sinlge NIfTI file in '
