@@ -59,15 +59,18 @@ def _mask(masker, img, regressor_names=None, roi_labels=None, as_voxels=False):
     return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
-def _discard_initial_scans(img, regressors, n_scans):
+def _discard_initial_scans(img, n_scans, regressors=None):
     """Remove first number of scans from functional image and regressors"""
     # crop scans from functional
     arr = img.get_data()
     arr = arr[:, :, :, n_scans:]
     out_img = nib.Nifti1Image(arr, img.affine)
 
-    # crop from regressors
-    out_reg = regressors.iloc[n_scans:, :]
+    if regressors is not None:
+        # crop from regressors
+        out_reg = regressors.iloc[n_scans:, :]
+    else:
+        out_reg = None
 
     return out_img, out_reg
 
@@ -109,6 +112,7 @@ def extract_data(input_files, mask, output_dir, labels=None,
 
         basename = os.path.basename(img)
         print('  Extracting from {}'.format(basename))
+        img = nib.load(img)
 
         if regressor_files is not None:
             confounds = _build_regressors(regressor_files[i], regressor_names)
@@ -116,8 +120,8 @@ def extract_data(input_files, mask, output_dir, labels=None,
             confounds = None
 
         if (discard_scans is not None) | (discard_scans > 0):
-            img, confounds = _discard_initial_scans(img, confounds,
-                                                     discard_scans)
+            img, confounds = _discard_initial_scans(img, discard_scans,
+                                                    confounds)
 
         data = _mask(masker, img, confounds, labels, as_voxels)
 
