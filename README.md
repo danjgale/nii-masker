@@ -89,12 +89,12 @@ optional arguments:
                         to include.
 ```
 
-Most of the arguments map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you
+Most of the parameters map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you
 label your ROIs instead or just using the numerical indices.
 
 Of course, if you want have full `nilearn` flexibility, you're better off using `nilearn` and Python directly.
 
-**Required arguments**
+**Required parameters**
 -  `ouput_dir`, specified by command-line only
 - `input_files`, can be specified by the command-line or by a configuration file
 - `mask_img`, can be specified by the command-line or by a configuration file
@@ -102,7 +102,43 @@ Of course, if you want have full `nilearn` flexibility, you're better off using 
 All other arguments are optional.
 
 ## The configuration JSON file
-Online documentation coming soon.
+
+Instead of passing all of the parameters through the command-line, `niimasker` also provides support for a simple configuration JSON file. The only parameter that needs to be passed into the command-line is the output directory (`output_dir`). All other parameters can either be set by the configuration file or by the command-line. **Note that the configuration file overwrites any of the command-line parameters**. An empty configuration file template of all of the parameters is provided in `config_template.json`, which is shown below:
+
+```JSON
+{
+  "mask_img": "",
+  "labels": "",
+  "regressor_files": null,
+  "regressor_names": null,
+  "motion_derivs": false,
+  "as_voxels": false,
+  "standardize": false,
+  "t_r": null,
+  "high_pass": null,
+  "low_pass": null,
+  "detrend": false,
+  "smoothing_fwhm": null
+}
+```
+
+An example use-case that combines both the command-line parameters and configuration file:
+
+`niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json``
+
+Where `config.json` is:
+
+```JSON
+{
+  "mask_img": "some_atlas.nii.gz",
+  "standardize": true,
+  "t_r": 2,
+  "high_pass": 0.01,
+  "smoothing_fwhm": 6
+}
+```
+
+This is convenient when you `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
 
 # Upcoming features
 - Built-in support for atlases that can be fetched directly from `nilearn`
