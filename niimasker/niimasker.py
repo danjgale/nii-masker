@@ -5,6 +5,7 @@ series data.
 import os
 import numpy as np
 import pandas as pd
+import nibabel as nib
 from nilearn.image import load_img
 from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
@@ -26,24 +27,24 @@ def _build_regressors(fname, regressor_names, motion_derivatives=False):
 
 ## MASKING FUNCTIONS
 
-def _set_masker(roi_img, **kwargs):
+def _set_masker(mask_img, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
-    n_rois = np.unique(roi_img.get_data())
-    print('{} region(s) detected from ROI file'.format(len(n_rois) - 1))
+    n_rois = np.unique(mask_img.get_data())
+    print('  {} region(s) detected from ROI file'.format(len(n_rois) - 1))
 
     if len(n_rois) > 2:
-        masker = NiftiLabelsMasker(roi_img, **kwargs)
+        masker = NiftiLabelsMasker(mask_img, **kwargs)
     elif len(n_rois) == 2:
-        masker = NiftiMasker(roi_img, **kwargs)
+        masker = NiftiMasker(mask_img, **kwargs)
     else:
         # only 1 value found
         raise ValueError('No ROI detected; check ROI file')
     return masker
 
 
-def _mask(masker, img, regressors=None, roi_labels=None, as_voxels=False):
+def _mask(masker, img, regressor_names=None, roi_labels=None, as_voxels=False):
     """Extract timeseries from an image and apply post-processing"""
-    timeseries = masker.fit_transform(img, confounds=regressors)
+    timeseries = masker.fit_transform(img, confounds=regressor_names)
 
     if isinstance(masker, NiftiMasker):
         if as_voxels:
@@ -55,12 +56,25 @@ def _mask(masker, img, regressors=None, roi_labels=None, as_voxels=False):
     else:
         labels = masker.labels_ if roi_labels is None else roi_labels
 
-    return pd.DataFrame(timeseries, columns=labels)
+    return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
-def extract_data(input_files, roi_file, output_dir, roi_labels=None,
-                 regressor_files=None, regressors=None, as_voxels=False,
-                 **masker_kwargs):
+def _discard_initial_scans(img, regressors, n_scans):
+    """Remove first number of scans from functional image and regressors"""
+    # crop scans from functional
+    arr = img.get_data()
+    arr = arr[:, :, :, n_scans:]
+    out_img = nib.Nifti1Image(arr, img.affine)
+
+    # crop from regressors
+    out_reg = regressors.iloc[n_scans:, :]
+
+    return out_img, out_reg
+
+
+def extract_data(input_files, mask, output_dir, labels=None,
+                 regressor_files=None, regressor_names=None, as_voxels=False,
+                 discard_scans=None, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s).
 
@@ -88,19 +102,24 @@ def extract_data(input_files, roi_file, output_dir, roi_labels=None,
         not for atlas images (yet)
     """
     os.makedirs(output_dir, exist_ok=True)
-    roi_img = load_img(roi_file)
-    masker = _set_masker(roi_img, **masker_kwargs)
+    mask_img = load_img(mask)
+    masker = _set_masker(mask_img, **masker_kwargs)
 
     for i, img in enumerate(input_files):
 
         basename = os.path.basename(img)
-        print('Extracting from {}'.format(basename))
+        print('  Extracting from {}'.format(basename))
 
         if regressor_files is not None:
-            confounds = _build_regressors(regressor_files[i], regressors)
+            confounds = _build_regressors(regressor_files[i], regressor_names)
         else:
             confounds = None
-        data = _mask(masker, img, confounds, roi_labels, as_voxels)
+
+        if (discard_scans is not None) | (discard_scans > 0):
+            img, confounds = _discard_initial_scans(img, confounds,
+                                                     discard_scans)
+
+        data = _mask(masker, img, confounds, labels, as_voxels)
 
         out_fname = basename.split('.')[0] + '_timeseries.tsv'
         data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)
