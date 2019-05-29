@@ -41,7 +41,7 @@ optional arguments:
                         They must be sorted in ascending order to correctly
                         correspond to the atlas indices. The number of labels
                         provided must match the number of non-zero indices in
-                        `mask`.
+                        `mask`. If none are provided, numeric indices are used
   --regressor_files regressor_files [regressor_files ...]
                         One or more tabular files with regressors in each
                         column. The number of files match the number of input
