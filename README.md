@@ -2,23 +2,95 @@
 
 This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while giving you several options to apply post-processing to your MRI data (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
 
+# Documentation
+
 ## Installation
 
-First, download this repository to a directory. Then, navigate to the directory and run `pip install .` to install `niimasker`.
+First, download this repository to a directory. Then, navigate to the directory and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
 ## Running `niimasker`
 
-In order to run `niimasker`, you will need to specify a configuration file (see `config_template.json`) and an output directory. This can be run into the command-line as so:
+`niimasker` can be run via the command-line and can take the following arguments:
 
-`niimasker config.json /path/to/output `
+```
+usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask]
+                 [--labels labels [labels ...]]
+                 [--regressor_files regressor_files [regressor_files ...]]
+                 [--regressor_names regressor_names [regressor_names ...]]
+                 [--as_voxels as_voxels] [--standardize standardize]
+                 [--t_r t_r] [--high_pass high_pass] [--low_pass low_pass]
+                 [--detrend detrend] [--smoothing_fwhm smoothing_fwhm]
+                 [--discard_scans discard_scans] [-c config]
+                 output_dir
 
-## Configuring `niimasker`
+positional arguments:
+  output_dir            The path to the output directory
 
-Coming soon.
+optional arguments:
+  -h, --help            show this help message and exit
+  -i input_files [input_files ...], --input_files input_files [input_files ...]
+                        One or more input NIfTI images. Can also be a single
+                        string with a wildcard (*) to specify all files
+                        matching the file pattern. If so, these files are
+                        naturally sorted by file name prior to extraction.
+  -m mask, --mask mask  File path of the atlas/ROI mask. Can either be a
+                        single ROI mask that is binary, or an atlas with
+                        numeric labels. Must be a sinlge NIfTI file in the
+                        same space as the input images.
+  --labels labels [labels ...]
+                        Labels corresponding to the mask numbers in `mask`.
+                        They must be sorted in ascending order to correctly
+                        correspond to the atlas indices. The number of labels
+                        provided must match the number of non-zero indices in
+                        `mask`.
+  --regressor_files regressor_files [regressor_files ...]
+                        One or more tabular files with regressors in each
+                        column. The number of files match the number of input
+                        NIfTI files provided and must be in the same order.
+                        The number of rows in each file must match the number
+                        of timepoints in their respective input NIfTI files.
+                        Can also be a single string with a wildcard (*) to
+                        specify all files matching the file pattern. If so,
+                        these files are naturally sorted by file name prior to
+                        extraction. Double check to make sure these are
+                        correctly aligned with the input NIfTI files.
+  --regressor_names regressor_names [regressor_names ...]
+                        The regressor names to use for confound regression.
+                        Applies to all regressor files and the names must
+                        correspond to headers in each file
+  --as_voxels as_voxels
+                        Whether to extract out the timeseries of each voxel
+                        instead of the mean timeseries. This is only available
+                        for single ROI binary masks. Default False.
+  --standardize standardize
+                        Whether to standardize (z-score) each timeseries.
+                        Default False
+  --t_r t_r             The TR of the input NIfTI files. Must be included if
+                        temporal filtering is specified.
+  --high_pass high_pass
+                        High pass filter cut off in Hertz. If notspecified, no
+                        filtering is done.
+  --low_pass low_pass   Low pass filter cut off in Hertz. If not specified, no
+                        filtering is done.
+  --detrend detrend     Whether to detrend the data. Default False
+  --smoothing_fwhm smoothing_fwhm
+                        Smoothing kernel FWHM (in mm) if spatial smoothing is
+                        desired. If not specified, no smoothing is performed.
+  --discard_scans discard_scans
+                        Discard the first N scans of each functional NIfTI
+                        image.
+  -c config, --config config
+                        Configuration .json file as an alternative to command-
+                        line arguments. See online documentation for what keys
+                        to include.
+```
+
+## The configuration file
+
+Online documentation coming soon.
 
 ## Upcoming features
 
-- Expanded command-line arguments
 - Built-in support for atlases that can be fetched directly from `nilearn`
 - A comprehensive visual report (as an `html` file) in order to get a birds-eye view of the timecourses. Easily check for quality issues (e.g., amplitude spikes from motion) and how the data were generated
 - Option to include event files (similar to what SPM or FSL require for first-level analyses) that labels each timepoint based on the task and conditions (only relevant for task-based fMRI).
