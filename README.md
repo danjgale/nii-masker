@@ -1,12 +1,12 @@
 # nii-masker
 
-This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while giving you several options to apply post-processing to your MRI data (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
+This is a simple command-line wrapper for `nilearn`'s [Masker object](https://nilearn.github.io/manipulating_images/masker_objects.html), which lets you easily extract out region-of-interest (ROI) timeseries from functional MRI data while providing several options for applying additional post-processing (e.g., spatial smoothing, temporal filtering, confound regression, etc). This tool ultimately aims to extend `nilearn`'s powerful and convenient masking features to non-Python users who wish to analyze fMRI data.
 
 # Documentation
 
 ## Installation
 
-First, download this repository to a directory. Then, navigate to the directory and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
+First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
 ## Running `niimasker`
 
@@ -85,11 +85,11 @@ optional arguments:
                         to include.
 ```
 
-Most of the arguments map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail), with the exception of `--discard_scans`, which lets you remove the first N scans of your data prior to extraction, and `--as_voxels`, which lets you get individual voxel timeseries when using a single ROI.
+Most of the arguments map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail), with the exception of `--discard_scans`, which lets you remove the first *N* scans of your data prior to extraction, and `--as_voxels`, which lets you get individual voxel timeseries when using a single ROI.
 
 Of course, if you want have full `nilearn` flexibility, you're better off using `nilearn` and Python directly.
 
-## The configuration file
+## The configuration JSON file
 
 Online documentation coming soon.
 
