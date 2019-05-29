@@ -37,7 +37,8 @@ def _build_regressors(fname, regressor_names, motion_derivatives=False,
 def _set_masker(mask_img, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
     n_rois = np.unique(mask_img.get_data())
-    print('  {} region(s) detected from ROI file'.format(len(n_rois) - 1))
+    print('  {} region(s) detected from {}'.format(len(n_rois) - 1,
+                                                   mask_img.get_filename()))
 
     if len(n_rois) > 2:
         masker = NiftiLabelsMasker(mask_img, **kwargs)
