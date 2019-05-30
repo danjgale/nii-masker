@@ -149,7 +149,7 @@ def main():
     print('INPUT PARAMETERS:')
     for k, v in params.items():
         if isinstance(v, list):
-            print('  {}: {}'.format(k, "\n".join(v)))
+            print('  {}:\n    {}'.format(k, "\n".join(v)))
         else:
             print('  {}: {}'.format(k, v))
 
