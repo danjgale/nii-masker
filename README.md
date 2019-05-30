@@ -124,7 +124,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 
 An example use-case that combines both the command-line parameters and configuration file:
 
-`niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json``
+`niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
 
 Where `config.json` is:
 
@@ -151,8 +151,9 @@ Where `config.json` is:
   "smoothing_fwhm": 6
 }
 ```
+Note that you do not need to include all keys in your configuration file, just what you need.
 
-This is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
+This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
 
 # Upcoming features
 - Built-in support for atlases that can be fetched directly from `nilearn`
