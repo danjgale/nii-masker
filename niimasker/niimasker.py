@@ -28,24 +28,24 @@ def _discard_initial_scans(img, n_scans, regressors=None):
 
 ## CONFOUND REGRESSOR FUNCTIONS
 
-def _compute_motion_derivs(regressors, t_r):
-    """Compute derivatives from motion parameters"""
+def _compute_realign_derivs(regressors, t_r):
+    """Compute derivatives from motion realignment parameters"""
     cols = [i for i in regressors.columns if ('rot' in i) | ('trans' in i)]
-    motion = regressors[cols].values
+    realign = regressors[cols].values
     # compute central differences with sample distances = TR
-    derivs = np.gradient(motion, axis=0, varargs=t_r)
+    derivs = np.gradient(realign, axis=0, varargs=t_r)
     deriv_cols = ['{}_d'.format(i) for i in cols]
     return pd.concat([regressors, pd.DataFrame(derivs, columns=deriv_cols)],
                      axis=1)
 
 
-def _build_regressors(fname, regressor_names, motion_derivatives=False,
+def _build_regressors(fname, regressor_names, realign_derivatives=False,
                       t_r=None):
     """Create regressors for masking"""
     all_regressors = pd.read_csv(fname, sep=r'\t')
     regressors = all_regressors[regressor_names]
-    if motion_derivatives:
-        regressors = _compute_motion_derivs(regressors, t_r)
+    if realign_derivatives:
+        regressors = _compute_realign_derivs(regressors, t_r)
     return regressors.values
 
 
@@ -86,7 +86,7 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
 
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
                     regressor_files=None, regressor_names=None,
-                    motion_derivs=False, as_voxels=False, discard_scans=None,
+                    realign_derivs=False, as_voxels=False, discard_scans=None,
                     **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s). This is the main function of this module.
@@ -109,11 +109,11 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     regressors : list of str, optional
         Regressor names to select from `regressor_files` headers. Default is
         None
-    motion_derivs : bool, optional
-        Whether to compute and include temporal of any head motion regressor
-        produced from motion correction. This will automatically compute the
-        derivative only for columns with 'rot' or 'trans' in them. Default is
-        False
+    realign_derivs : bool, optional
+        Whether to compute and include the temporal derivative of any head
+        motion realignment regressors produced from motion correction. This
+        will automatically compute the derivative only for columns with 'rot'
+        or 'trans' in them. Default is False.
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
@@ -138,7 +138,7 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
 
         if regressor_files is not None:
             confounds = _build_regressors(regressor_files[i], regressor_names,
-                                          motion_derivs, masker_kwargs['t_r'])
+                                          realign_derivs, masker_kwargs['t_r'])
         else:
             confounds = None
 

@@ -10,12 +10,11 @@ First, download this repository to a directory. Then, navigate to the directory,
 ## Running `niimasker`
 `niimasker` can be run via the command-line and can take the following arguments:
 
-```
 usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
-                 [--motion_derivs motion_derivs] [--as_voxels as_voxels]
+                 [--realign_derivs realign_derivs] [--as_voxels as_voxels]
                  [--standardize standardize] [--t_r t_r]
                  [--high_pass high_pass] [--low_pass low_pass]
                  [--detrend detrend] [--smoothing_fwhm smoothing_fwhm]
@@ -58,8 +57,8 @@ optional arguments:
                         The regressor names to use for confound regression.
                         Applies to all regressor files and the names must
                         correspond to headers in each file
-  --motion_derivs motion_derivs
-                        Whether to include temporal derivatives of motion
+  --realign_derivs realign_derivs
+                        Whether to include temporal derivatives of realignment
                         regressors. --t_r must be specified.
   --as_voxels as_voxels
                         Whether to extract out the timeseries of each voxel
@@ -69,7 +68,7 @@ optional arguments:
                         Whether to standardize (z-score) each timeseries.
                         Default False
   --t_r t_r             The TR of the input NIfTI files, specified in seconds.
-                        Must be included if temporal filtering or motion
+                        Must be included if temporal filtering or realignment
                         derivatives are specified.
   --high_pass high_pass
                         High pass filter cut off in Hertz. If notspecified, no
@@ -111,7 +110,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "labels": "",
   "regressor_files": null,
   "regressor_names": null,
-  "motion_derivs": false,
+  "realign_derivs": false,
   "as_voxels": false,
   "standardize": false,
   "t_r": null,

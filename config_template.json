@@ -3,12 +3,12 @@
   "labels": "",
   "regressor_files": null,
   "regressor_names": null,
-  "motion_derivs": false,
+  "realign_derivs": false,
   "as_voxels": false,
   "standardize": false,
   "t_r": null,
+  "detrend": false,
   "high_pass": null,
   "low_pass": null,
-  "detrend": false,
   "smoothing_fwhm": null
 }
