@@ -132,13 +132,27 @@ Where `config.json` is:
 {
   "mask_img": "some_atlas.nii.gz",
   "standardize": true,
+  "regressor_files": [
+    "confounds1.tsv",
+    "confounds2.tsv"
+  ],
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
   "t_r": 2,
   "high_pass": 0.01,
   "smoothing_fwhm": 6
 }
 ```
 
-This is convenient when you `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
+This is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
 
 # Upcoming features
 - Built-in support for atlases that can be fetched directly from `nilearn`

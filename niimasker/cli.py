@@ -7,7 +7,7 @@ import glob
 import pandas as pd
 from natsort import natsorted
 
-from niimasker.niimasker import extract_data
+from niimasker.niimasker import make_timeseries
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -150,7 +150,7 @@ def main():
         print('  {}: {}'.format(k, v))
 
     print('RUNNING:')
-    extract_data(**params)
+    make_timeseries(**params)
 
 
 if __name__ == '__main__':

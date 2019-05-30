@@ -84,10 +84,10 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
     return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
-def extract_data(input_files, mask_img, output_dir, labels=None,
-                 regressor_files=None, regressor_names=None,
-                 motion_derivs=False, as_voxels=False, discard_scans=None,
-                 **masker_kwargs):
+def make_timeseries(input_files, mask_img, output_dir, labels=None,
+                    regressor_files=None, regressor_names=None,
+                    motion_derivs=False, as_voxels=False, discard_scans=None,
+                    **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s).
 
