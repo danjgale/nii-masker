@@ -160,3 +160,9 @@ This set up is convenient when your `output_dir` and `input_files` vary on a sub
 - A comprehensive visual report (as an `html` file) in order to get a birds-eye view of the timecourses. Easily check for quality issues (e.g., amplitude spikes from motion) and how the data were generated
 - Option to include event files (similar to what SPM or FSL require for first-level analyses) that labels each timepoint based on the task and conditions (only relevant for task-based fMRI).
 - Full [fmriprep](https://fmriprep.readthedocs.io/en/stable/) and [BIDS](http://bids.neuroimaging.io/) support, such that confound and event files are detected automatically based on the input NIfTI. Essentially this tool could be converted to a [bids-app](http://bids-apps.neuroimaging.io/).
+
+
+# References and resources
+
+- `nilearn` [homepage](https://nilearn.github.io/index.html)
+- If you are using this project, please cite `nilearn`: [paper found here](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full)
