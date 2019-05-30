@@ -21,7 +21,7 @@ def _discard_initial_scans(img, n_scans, regressors=None):
 
     if regressors is not None:
         # crop from regressors
-        out_reg = regressors.iloc[n_scans:, :]
+        out_reg = regressors[n_scans:, :]
     else:
         out_reg = None
 
