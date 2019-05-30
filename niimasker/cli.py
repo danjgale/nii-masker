@@ -1,6 +1,6 @@
 """Functions for command line interface
 """
-
+import os
 import argparse
 import json
 import glob
