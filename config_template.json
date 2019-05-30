@@ -10,5 +10,6 @@
   "detrend": false,
   "high_pass": null,
   "low_pass": null,
-  "smoothing_fwhm": null
+  "smoothing_fwhm": null,
+  "n_jobs": 1
 }

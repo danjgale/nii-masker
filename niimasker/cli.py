@@ -86,6 +86,9 @@ def _cli_parser():
     parser.add_argument('--discard_scans', type=int, metavar='discard_scans',
                         help='Discard the first N scans of each functional '
                              'NIfTI image.')
+    parser.add_argument('--n_jobs', type=int, metavar='n_jobs', default=1,
+                        help='The number of CPUs to use if parallelization is '
+                             'desired. Default is 1 (serial processing).')
     parser.add_argument('-c', '--config', type=str.lower, metavar='config',
                         help='Configuration .json file as an alternative to '
                              'command-line arguments. See online documentation '

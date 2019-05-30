@@ -10,6 +10,7 @@ First, download this repository to a directory. Then, navigate to the directory,
 ## Running `niimasker`
 `niimasker` can be run via the command-line and can take the following arguments:
 
+```
 usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
@@ -18,7 +19,7 @@ usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--standardize standardize] [--t_r t_r]
                  [--high_pass high_pass] [--low_pass low_pass]
                  [--detrend detrend] [--smoothing_fwhm smoothing_fwhm]
-                 [--discard_scans discard_scans] [-c config]
+                 [--discard_scans discard_scans] [--n_jobs n_jobs] [-c config]
                  output_dir
 
 positional arguments:
@@ -82,6 +83,8 @@ optional arguments:
   --discard_scans discard_scans
                         Discard the first N scans of each functional NIfTI
                         image.
+  --n_jobs n_jobs       The number of CPUs to use if parallelization is
+                        desired. Default is 1 (serial processing).
   -c config, --config config
                         Configuration .json file as an alternative to command-
                         line arguments. See online documentation for what keys
@@ -114,14 +117,15 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "as_voxels": false,
   "standardize": false,
   "t_r": null,
+  "detrend": false,
   "high_pass": null,
   "low_pass": null,
-  "detrend": false,
-  "smoothing_fwhm": null
+  "smoothing_fwhm": null,
+  "n_jobs": 1
 }
 ```
 
-An example use-case that combines both the command-line parameters and configuration file:
+All parameter defaults are shown above. Note that not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
 
 `niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
 
@@ -150,7 +154,6 @@ Where `config.json` is:
   "smoothing_fwhm": 6
 }
 ```
-Note that you do not need to include all keys in your configuration file, just what you need.
 
 This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
 

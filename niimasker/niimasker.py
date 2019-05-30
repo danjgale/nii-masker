@@ -3,6 +3,8 @@ series data.
 """
 
 import os
+from itertools import product, repeat
+import multiprocessing
 import numpy as np
 import pandas as pd
 import nibabel as nib
@@ -42,7 +44,7 @@ def _compute_realign_derivs(regressors, t_r):
 def _build_regressors(fname, regressor_names, realign_derivatives=False,
                       t_r=None):
     """Create regressors for masking"""
-    all_regressors = pd.read_csv(fname, sep=r'\t')
+    all_regressors = pd.read_csv(fname, sep=r'\t', engine='python')
     regressors = all_regressors[regressor_names]
     if realign_derivatives:
         regressors = _compute_realign_derivs(regressors, t_r)
@@ -84,10 +86,36 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
     return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
+def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
+                   regressor_names=None, realign_derivs=False, t_r=None,
+                   as_voxels=False, labels=None, discard_scans=None):
+    """Runs the full masking process and saves output for a single image;
+    the main function used by `make_timeseries` `make_timeseries`"""
+    basename = os.path.basename(img_name)
+    print('  Extracting from {}'.format(basename))
+    img = nib.load(img_name)
+
+    if regressor_file is not None:
+        confounds = _build_regressors(regressor_file, regressor_names,
+                                        realign_derivs, t_r)
+    else:
+        confounds = None
+
+    if discard_scans is not None:
+        if discard_scans > 0:
+            img, confounds = _discard_initial_scans(img, discard_scans,
+                                                    confounds)
+
+    data = _mask(masker, img, confounds, labels, as_voxels)
+
+    out_fname = basename.split('.')[0] + '_timeseries.tsv'
+    data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)
+
+
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
                     regressor_files=None, regressor_names=None,
                     realign_derivs=False, as_voxels=False, discard_scans=None,
-                    **masker_kwargs):
+                    n_jobs=1, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s). This is the main function of this module.
 
@@ -101,7 +129,7 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
         indicate background (non-region voxels).
     output_dir : str
         Save directory.
-    roi_labels : str or list of str
+    labels : str or list of str
         ROI names which are in order of ascending numeric labels in roi_file.
         Default is None
     regressor_files : list of str, optional
@@ -123,6 +151,9 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
         prior to any sort of extraction and post-processing. This is prevents
         unstabilized signals at the start from being included in signal
         standardization, etc.
+    n_jobs : int, optional
+        Number of processes to use for extraction if parallelization is
+        dersired. Default is 1 (no parallelization)
     **masker_kwargs
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
@@ -130,24 +161,33 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     mask_img = load_img(mask_img)
     masker = _set_masker(mask_img, **masker_kwargs)
 
-    for i, img in enumerate(input_files):
+    # set as list of NoneType if no regressor files; makes it easy for
+    # iterations
+    if regressor_files is None:
+        regressor_files = [regressor_files] * len(input_files)
 
-        basename = os.path.basename(img)
-        print('  Extracting from {}'.format(basename))
-        img = nib.load(img)
+    # no parallelization
+    if n_jobs == 1:
+        for i, img in enumerate(input_files):
+            _mask_and_save(masker, img, output_dir, regressor_files[i],
+                           regressor_names, realign_derivs, masker_kwargs['t_r'],
+                           as_voxels, labels, discard_scans)
+    else:
+        # repeat parameters are held constant for all parallelized iterations
+        args = zip(
+            repeat(masker),
+            input_files, # iterate over
+            repeat(output_dir),
+            regressor_files, # iterate over, paired with input_files
+            repeat(regressor_names),
+            repeat(realign_derivs),
+            repeat(masker_kwargs['t_r']),
+            repeat(as_voxels),
+            repeat(labels),
+            repeat(discard_scans)
+        )
+        # print(list(args))
+        # raise Exception
+        with multiprocessing.Pool(processes=n_jobs) as pool:
+            pool.starmap(_mask_and_save, args)
 
-        if regressor_files is not None:
-            confounds = _build_regressors(regressor_files[i], regressor_names,
-                                          realign_derivs, masker_kwargs['t_r'])
-        else:
-            confounds = None
-
-        if discard_scans is not None:
-            if discard_scans > 0:
-                img, confounds = _discard_initial_scans(img, discard_scans,
-                                                        confounds)
-
-        data = _mask(masker, img, confounds, labels, as_voxels)
-
-        out_fname = basename.split('.')[0] + '_timeseries.tsv'
-        data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)
