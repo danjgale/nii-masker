@@ -9,6 +9,23 @@ import nibabel as nib
 from nilearn.image import load_img
 from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
+
+def _discard_initial_scans(img, n_scans, regressors=None):
+    """Remove first number of scans from functional image and regressors"""
+    # crop scans from functional
+    arr = img.get_data()
+    arr = arr[:, :, :, n_scans:]
+    out_img = nib.Nifti1Image(arr, img.affine)
+
+    if regressors is not None:
+        # crop from regressors
+        out_reg = regressors.iloc[n_scans:, :]
+    else:
+        out_reg = None
+
+    return out_img, out_reg
+
+
 ## CONFOUND REGRESSOR FUNCTIONS
 
 def _compute_motion_derivs(regressors, t_r):
@@ -50,9 +67,9 @@ def _set_masker(mask_img, **kwargs):
     return masker
 
 
-def _mask(masker, img, regressor_names=None, roi_labels=None, as_voxels=False):
+def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
     """Extract timeseries from an image and apply post-processing"""
-    timeseries = masker.fit_transform(img, confounds=regressor_names)
+    timeseries = masker.fit_transform(img, confounds=confounds)
 
     if isinstance(masker, NiftiMasker):
         if as_voxels:
@@ -67,25 +84,10 @@ def _mask(masker, img, regressor_names=None, roi_labels=None, as_voxels=False):
     return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
-def _discard_initial_scans(img, n_scans, regressors=None):
-    """Remove first number of scans from functional image and regressors"""
-    # crop scans from functional
-    arr = img.get_data()
-    arr = arr[:, :, :, n_scans:]
-    out_img = nib.Nifti1Image(arr, img.affine)
-
-    if regressors is not None:
-        # crop from regressors
-        out_reg = regressors.iloc[n_scans:, :]
-    else:
-        out_reg = None
-
-    return out_img, out_reg
-
-
 def extract_data(input_files, mask_img, output_dir, labels=None,
-                 regressor_files=None, regressor_names=None, as_voxels=False,
-                 discard_scans=None, motion_derivs=False, **masker_kwargs):
+                 regressor_files=None, regressor_names=None,
+                 motion_derivs=False, as_voxels=False, discard_scans=None,
+                 **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s).
 
@@ -107,10 +109,22 @@ def extract_data(input_files, mask_img, output_dir, labels=None,
     regressors : list of str, optional
         Regressor names to select from `regressor_files` headers. Default is
         None
+    motion_derivs : bool, optional
+        Whether to compute and include temporal of any head motion regressor
+        produced from motion correction. This will automatically compute the
+        derivative only for columns with 'rot' or 'trans' in them. Default is
+        False
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
         not for atlas images (yet)
+    discard_scans : int, optional
+        The number of scans to discard at the start of each functional image,
+        prior to any sort of extraction and post-processing. This is prevents
+        unstabilized signals at the start from being included in signal
+        standardization, etc.
+    **masker_kwargs
+        Keyword arguments for `nilearn.input_data` Masker objects.
     """
     os.makedirs(output_dir, exist_ok=True)
     mask_img = load_img(mask_img)
