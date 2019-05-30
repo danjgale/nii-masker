@@ -32,8 +32,8 @@ def _compute_realign_derivs(regressors, t_r):
     """Compute derivatives from motion realignment parameters"""
     cols = [i for i in regressors.columns if ('rot' in i) | ('trans' in i)]
     realign = regressors[cols].values
-    # compute central differences with sample distances = TR
-    derivs = np.gradient(realign, axis=0, varargs=t_r)
+    # compute central differences with sample distances = TR; (dx)
+    derivs = np.gradient(realign, t_r, axis=0)
     deriv_cols = ['{}_d'.format(i) for i in cols]
     return pd.concat([regressors, pd.DataFrame(derivs, columns=deriv_cols)],
                      axis=1)
