@@ -109,7 +109,8 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
     data = _mask(masker, img, confounds, labels, as_voxels)
 
     out_fname = basename.split('.')[0] + '_timeseries.tsv'
-    data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False)
+    data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
+                float_format='%.5f')
 
 
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
@@ -186,8 +187,6 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
             repeat(labels),
             repeat(discard_scans)
         )
-        # print(list(args))
-        # raise Exception
         with multiprocessing.Pool(processes=n_jobs) as pool:
             pool.starmap(_mask_and_save, args)
 
