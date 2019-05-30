@@ -1,5 +1,6 @@
 """Functions for command line interface
 """
+import sys
 import os
 import argparse
 import json
@@ -156,9 +157,11 @@ def main():
         else:
             print('  {}: {}'.format(k, v))
 
+    # export command-line call and parameters to a file
+    param_info = {'command': " ".join(sys.argv), 'parameters': params}
     param_file = os.path.join(params['output_dir'], 'parameters.json')
     with open(param_file, 'w') as fp:
-        json.dump(params, fp, indent=2)
+        json.dump(param_info, fp, indent=2)
 
     print('RUNNING:')
     make_timeseries(**params)

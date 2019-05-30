@@ -3,7 +3,7 @@ series data.
 """
 
 import os
-from itertools import product, repeat
+from itertools import repeat
 import multiprocessing
 import numpy as np
 import pandas as pd
@@ -110,7 +110,7 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
 
     out_fname = basename.split('.')[0] + '_timeseries.tsv'
     data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
-                float_format='%.5f')
+                float_format='%.8f')
 
 
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
