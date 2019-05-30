@@ -89,7 +89,7 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
                     motion_derivs=False, as_voxels=False, discard_scans=None,
                     **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
-    the region(s) of interest(s).
+    the region(s) of interest(s). This is the main function of this module.
 
     Parameters
     ----------
