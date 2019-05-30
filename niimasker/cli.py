@@ -148,7 +148,14 @@ def main():
     # display
     print('INPUT PARAMETERS:')
     for k, v in params.items():
-        print('  {}: {}'.format(k, v))
+        if isinstance(v, list):
+            print('  {}: {}'.format(k, "\n".join(v)))
+        else:
+            print('  {}: {}'.format(k, v))
+
+    param_file = os.path.join(params['output_dir'], 'parameters.json')
+    with open(param_file, 'wb') as f:
+        json.dump(params, f, indent=2)
 
     print('RUNNING:')
     make_timeseries(**params)
