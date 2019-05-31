@@ -6,9 +6,10 @@ This is a simple command-line wrapper for `nilearn`'s [Masker objects](https://n
 
 If you are using this project, please cite `nilearn`:
 
-    Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, J., … Varoquaux, G. (2014). [Machine learning for neuroimaging with scikit-learn](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full). Frontiers in Neuroinformatics, 8, 14.
-
-See also: [Nilearn documentation](https://nilearn.github.io/index.html).
+```
+Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, J., … Varoquaux, G. (2014). Machine learning for neuroimaging with scikit-learn. Frontiers in Neuroinformatics, 8, 14.
+```
+[Link to paper](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full). See also: [Nilearn documentation](https://nilearn.github.io/index.html).
 
 # Documentation
 
