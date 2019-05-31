@@ -152,6 +152,8 @@ def main():
         with open(params['config'], 'rb') as f:
             conf_params = json.load(f)
         params = _merge_params(params, conf_params)
+    else:
+        params.pop('config')
 
     params = _check_params(params)
     # display

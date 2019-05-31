@@ -47,7 +47,10 @@ def _build_regressors(fname, regressor_names, realign_derivatives=False,
     all_regressors = pd.read_csv(fname, sep=r'\t', engine='python')
     regressors = all_regressors[regressor_names]
     if realign_derivatives:
-        regressors = _compute_realign_derivs(regressors, t_r)
+        if t_r is not None:
+            regressors = _compute_realign_derivs(regressors, t_r)
+        else:
+            raise ValueError('t_r not provided for realignment derivatives.')
     return regressors.values
 
 
