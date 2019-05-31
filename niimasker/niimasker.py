@@ -158,7 +158,6 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     **masker_kwargs
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
-    os.makedirs(output_dir, exist_ok=True)
     mask_img = load_img(mask_img)
     masker = _set_masker(mask_img, **masker_kwargs)
 
