@@ -155,7 +155,7 @@ Where `config.json` is:
 }
 ```
 
-This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant across subjects and are thus stored in the project's configuration file. The configuration file therefore helps you keep track of what you did to extract out the timeseries.
+This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant. Therefore, constants across subjects can be stored in the project's configuration file. The configuration file helps you keep track of what you did to extract out the timeseries.
 
 # Upcoming features
 - Built-in support for atlases that can be fetched directly from `nilearn`
@@ -167,4 +167,5 @@ This set up is convenient when your `output_dir` and `input_files` vary on a sub
 # References and resources
 
 - `nilearn` [homepage](https://nilearn.github.io/index.html)
-- If you are using this project, please cite `nilearn`: [paper found here](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full)
+- If you are using this project, please cite `nilearn`:
+    Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, J., … Varoquaux, G. (2014). Machine learning for neuroimaging with scikit-learn. Frontiers in Neuroinformatics, 8, 14. [Paper](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full)
