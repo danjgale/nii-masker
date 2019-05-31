@@ -118,7 +118,7 @@ All other arguments are optional.
 
 ### Example
 
-Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region labels are stored in `atlas.nii.gz`. With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`) along with the computed derivatives of motion realignment parameters. You also want to detrend and high-pass filter your data, and finally standardize each signal.
+Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region masks are stored in `atlas.nii.gz`, and have the names "region1" and "region2". With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`) along with the computed derivatives of motion realignment parameters. You also want to detrend and high-pass filter your data, and finally standardize each signal.
 
 ```bash
 niimasker output/ -i img1.nii.gz -m atlas.nii.gz --labels region1 region2 \
