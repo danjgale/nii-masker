@@ -158,7 +158,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 }
 ```
 
-All parameter defaults are shown above. Note that not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
+All parameter defaults are shown above. Not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
 
 `niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
 
