@@ -25,8 +25,8 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 
 First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
-## Running `niimasker`
-`niimasker` can be run via the command-line and can take the following arguments:
+## Using `niimasker`
+`niimasker` is run via the command-line and can take the following arguments:
 
 ```
 usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
