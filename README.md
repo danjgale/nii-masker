@@ -126,7 +126,7 @@ niimasker output/ -i img1.nii.gz -m atlas.nii.gz --labels region1 region2 \
 --high_pass 0.01 --detrend --standardize
 ```
 
-The averaged BOLD timeseries for `region1` and `region2` are stored in `output/img1_timeseries.tsv`:
+The averaged BOLD timeseries for `region1` and `region2` are stored in `output/img1_timeseries.tsv`, which is a time x ROI table:
 
 | region1 | region2 |
 |---------|---------|
