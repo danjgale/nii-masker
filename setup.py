@@ -13,7 +13,7 @@ setup(
         'numpy',
         'pandas',
         'nibabel',
-        'nilearn>=5.0',
+        'nilearn>=0.5.0',
         'natsort'
     ],
     tests_require=[
