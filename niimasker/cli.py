@@ -53,20 +53,20 @@ def _cli_parser():
                              'regression. Applies to all regressor files and '
                              'the names must correspond to headers in each '
                              'file')
-    parser.add_argument('--realign_derivs', type=bool, metavar='realign_derivs',
-                        default=False, help='Whether to include temporal '
-                                            'derivatives of realignment '
-                                            'regressors. --t_r must be '
-                                            'specified.')
-    parser.add_argument('--as_voxels', type=bool, metavar='as_voxels',
-                        default=False, help='Whether to extract out the '
-                                            'timeseries of each voxel instead '
-                                            'of the mean timeseries. This is '
-                                            'only available for single ROI '
-                                            'binary masks. Default False.')
-    parser.add_argument('--standardize', type=bool, metavar='standardize',
-                        default=False, help='Whether to standardize (z-score) '
-                                            'each timeseries. Default False')
+    parser.add_argument('--realign_derivs',
+                        default=False, action='store_true',
+                        help='Whether to include temporal derivatives of '
+                             'realignment regressors. --t_r must be specified.')
+    parser.add_argument('--as_voxels', default=False,
+                        action='store_true',
+                        help='Whether to extract out the timeseries of each '
+                             'voxel instead of the mean timeseries. This is '
+                             'only available for single ROI binary masks. '
+                             'Default False.')
+    parser.add_argument('--standardize',
+                        action='store_true', default=False,
+                        help='Whether to standardize (z-score) each timeseries. '
+                        'Default False')
     parser.add_argument('--t_r', type=int, metavar='t_r',
                         help='The TR of the input NIfTI files, specified in '
                              'seconds. Must be included if temporal filtering '
@@ -77,9 +77,9 @@ def _cli_parser():
     parser.add_argument('--low_pass', type=float, metavar='low_pass',
                         help='Low pass filter cut off in Hertz. If not '
                              'specified, no filtering is done.')
-    parser.add_argument('--detrend', type=bool, metavar='detrend',
-                        default=False, help='Whether to detrend the data. '
-                                            'Default False')
+    parser.add_argument('--detrend', action='store_true',
+                        default=False,
+                        help='Whether to detrend the data. Default False')
     parser.add_argument('--smoothing_fwhm', type=float, metavar='smoothing_fwhm',
                         help='Smoothing kernel FWHM (in mm) if spatial smoothing '
                              'is desired. If not specified, no smoothing is '
@@ -110,20 +110,25 @@ def _check_glob(x):
 def _check_params(params):
     """Ensure that required fields are included and correctly formatted"""
 
-    if 'input_files' not in params:
-        raise ValueError('Missing input file(s) (flag -i)')
+
+    if params['input_files'] is None:
+        raise ValueError('Missing input files. Check files')
     else:
         params['input_files'] = _check_glob(params['input_files'])
 
-    if 'mask_img' not in params:
-        raise ValueError('Missing mask file (flag -m, --mask_img)')
+    if not params['input_files']:
+        raise ValueError('Missing input files. Check files')
+
+    if not params['mask_img']:
+        raise ValueError('Missing mask file.')
 
     if params['regressor_files'] is not None:
         params['regressor_files'] = _check_glob(params['regressor_files'])
 
-    if isinstance(params['labels'], str) & params['labels'].endswith('.csv'):
-        df = pd.read_csv(params['labels'])
-        params['labels'] = df['Label'].tolist()
+    if isinstance(params['labels'], str):
+        if params['labels'].endswith('.csv'):
+            df = pd.read_csv(params['labels'])
+            params['labels'] = df['Label'].tolist()
 
     return params
 
@@ -143,7 +148,7 @@ def main():
     """Primary entrypoint in program"""
     params = vars(_cli_parser())
 
-    if 'config' in params:
+    if params['config'] is not None:
         with open(params['config'], 'rb') as f:
             conf_params = json.load(f)
         params = _merge_params(params, conf_params)
@@ -156,6 +161,8 @@ def main():
             print('  {}:\n    {}'.format(k, "\n    ".join(v)))
         else:
             print('  {}: {}'.format(k, v))
+
+    os.makedirs(params['output_dir'], exist_ok=True)
 
     # export command-line call and parameters to a file
     param_info = {'command': " ".join(sys.argv), 'parameters': params}
