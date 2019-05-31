@@ -168,4 +168,5 @@ This set up is convenient when your `output_dir` and `input_files` vary on a sub
 
 - `nilearn` [homepage](https://nilearn.github.io/index.html)
 - If you are using this project, please cite `nilearn`:
+
     Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, J., … Varoquaux, G. (2014). Machine learning for neuroimaging with scikit-learn. Frontiers in Neuroinformatics, 8, 14. [Paper](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full)
