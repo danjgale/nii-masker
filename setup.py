@@ -13,7 +13,7 @@ setup(
         'numpy',
         'pandas',
         'nibabel',
-        'nilearn',
+        'nilearn>=5.0',
         'natsort'
     ],
     tests_require=[
@@ -22,8 +22,8 @@ setup(
     ],
     setup_requires=['pytest-runner'],
     entry_points={
-            'console_scripts': [
-                'niimasker=niimasker.cli:main'
+        'console_scripts': [
+            'niimasker=niimasker.cli:main'
             ]
         }
 )
