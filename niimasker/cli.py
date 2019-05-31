@@ -52,7 +52,9 @@ def _cli_parser():
                         help='The regressor names to use for confound '
                              'regression. Applies to all regressor files and '
                              'the names must correspond to headers in each '
-                             'file')
+                             'file. If no regressor names are provided, but '
+                             'files are, all regressors in regressor files '
+                             'are used.')
     parser.add_argument('--realign_derivs',
                         default=False, action='store_true',
                         help='Whether to include temporal derivatives of '
@@ -72,10 +74,10 @@ def _cli_parser():
                              'seconds. Must be included if temporal filtering '
                              'or realignment derivatives are specified.')
     parser.add_argument('--high_pass', type=float, metavar='high_pass',
-                        help='High pass filter cut off in Hertz. If not'
+                        help='High pass filter cut off in Hertz. If it is not '
                              'specified, no filtering is done.')
     parser.add_argument('--low_pass', type=float, metavar='low_pass',
-                        help='Low pass filter cut off in Hertz. If not '
+                        help='Low pass filter cut off in Hertz. If it is not '
                              'specified, no filtering is done.')
     parser.add_argument('--detrend', action='store_true',
                         default=False,
