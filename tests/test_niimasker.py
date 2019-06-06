@@ -30,7 +30,7 @@ def atlas_data():
     """
     atlas = _get_atlas()
     img = nib.load(atlas['maps'])
-    return nib.concat_images([img] * 10)
+    return nib.concat_images([img] * 50)
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def regressors(tmpdir):
     reg_names = ['csf', 'wm', 'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y',
                  'rot_z']
     np.random.seed(42)
-    data = np.random.rand(10, len(reg_names))
+    data = np.random.rand(50, len(reg_names))
     return pd.DataFrame(data, columns=reg_names)
 
 
@@ -64,7 +64,6 @@ def test_discard_initial_scans(atlas_data, regressors):
     """Check if the correct number of scans are discarded at the start of the
     image
     """
-
     # function works on the underlying numpy array not the dataframe
     regressors = regressors.values
 
@@ -91,12 +90,30 @@ def test_set_masker(atlas_data):
     assert isinstance(masker, NiftiMasker)
 
 
-def test_mask(atlas_data):
-    pass
+def test_mask(atlas_data, regressors, post_processed_data):
+    """Test basic (completely raw) and post-processed masking. Ensure results
+    match equivalent versions created directly by nilearn"""
 
+    atlas = _get_atlas()
+    atlas_img = nib.load(atlas['maps'])
 
-def test_mask_and_save(atlas_data, tmpdir):
-    pass
+    # test basic mask with no post-processing
+    test_masker = niimasker._set_masker(atlas_img)
+    result = niimasker._mask(test_masker, atlas_data)
+
+    expected_masker = NiftiLabelsMasker(atlas_img)
+    expected = expected_masker.fit_transform(atlas_data)
+
+    assert np.array_equal(result, expected)
+
+    # test mask with all post-processing options
+    test_masker = niimasker._set_masker(atlas_img, standardize=True,
+                                        smoothing_fwhm=5, detrend=True,
+                                        low_pass=.1, high_pass=.01, t_r=2)
+    result = niimasker._mask(test_masker, atlas_data, confounds=regressors.values)
+
+    assert np.array_equal(result, post_processed_data)
+
 
 
 
