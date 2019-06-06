@@ -1,17 +1,22 @@
+# the type of machine to run tests
 dist: xenial
 sudo: true
 language: python
 
+# which versions of python to test
 python:
   - 3.5
   - 3.6
   - 3.7
 
+# somewhat arbitrary to install dependencies beforehand
 before_install:
   - pip install pytest
 
+# install the nii-masker package
 install:
   - pip install .
 
+# run pytest
 script:
   - pytest
