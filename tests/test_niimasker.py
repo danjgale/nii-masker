@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from nilearn.datasets import fetch_atlas_aal
+from nilearn.input_data import NiftiLabelsMasker, NiftiMasker
 
 from niimasker import niimasker
 
@@ -43,12 +44,17 @@ def regressors(tmpdir):
 
 
 @pytest.fixture
-def post_processed_data():
+def post_processed_data(atlas_data, regressors):
     """A post-processed version of the atlas_data, which is generated directly
     by nilearn rather than niimasker. The results from niimasker should
     directly match what is produced by nilearn.
     """
-    pass
+    labels_img = _get_atlas()['maps']
+    masker = NiftiLabelsMasker(labels_img, standardize=True, smoothing_fwhm=5,
+                               detrend=True, low_pass=.1, high_pass=.01, t_r=2)
+
+    confounds = regressors.values
+    return masker.fit_transform(atlas_data, confounds=confounds)
 
 
 ## TESTS
@@ -58,18 +64,31 @@ def test_discard_initial_scans(atlas_data, regressors):
     """Check if the correct number of scans are discarded at the start of the
     image
     """
-    n_scans = 3
 
     # function works on the underlying numpy array not the dataframe
     regressors = regressors.values
 
+    n_scans = 3
     img, regs = niimasker._discard_initial_scans(atlas_data, n_scans, regressors)
     assert img.get_data().shape[3] == atlas_data.get_data().shape[3] - n_scans
     assert regs.shape[0] == regressors.shape[0] - n_scans
 
 
 def test_set_masker(atlas_data):
-    pass
+    """Ensure that correct masker class is returned by _set_masker"""
+
+    atlas = _get_atlas()
+
+    # check multi ROI atlas
+    atlas_img = nib.load(atlas['maps'])
+    masker = niimasker._set_masker(atlas_img)
+    assert isinstance(masker, NiftiLabelsMasker)
+
+    # check single ROI atlas; create binary mask from atlas first
+    bin_img = nib.Nifti1Image(np.where(atlas_img.get_data() == 2001, 1., 0),
+                              atlas_img.affine)
+    masker = niimasker._set_masker(bin_img)
+    assert isinstance(masker, NiftiMasker)
 
 
 def test_mask(atlas_data):
