@@ -14,7 +14,9 @@ setup(
         'pandas',
         'nibabel',
         'nilearn>=0.5.0',
-        'natsort'
+        'natsort',
+        'scipy',
+        'scikit-learn'
     ],
     tests_require=[
         'pytest',
