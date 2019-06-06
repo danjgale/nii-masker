@@ -4,3 +4,4 @@ __pycache__/
 .eggs/
 niimasker.egg-info
 playground/
+.pytest_cache/
