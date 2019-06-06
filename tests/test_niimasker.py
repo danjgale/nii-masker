@@ -1,6 +1,8 @@
 
 import os
 import pytest
+import numpy as np
+import pandas as pd
 import nibabel as nib
 from nilearn.datasets import fetch_atlas_aal
 
@@ -25,7 +27,6 @@ def atlas_data():
     Every voxel/ROI is the same value across time. Therefore we can test if
     proper values are extracted (and if they are in the proper order).
     """
-
     atlas = _get_atlas()
     img = nib.load(atlas['maps'])
     return nib.concat_images([img] * 10)
@@ -33,7 +34,12 @@ def atlas_data():
 
 @pytest.fixture
 def regressors(tmpdir):
-    pass
+    """Mock regressors for confound regression testing"""
+    reg_names = ['csf', 'wm', 'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y',
+                 'rot_z']
+    np.random.seed(42)
+    data = np.random.rand(10, len(reg_names))
+    return pd.DataFrame(data, columns=reg_names)
 
 
 @pytest.fixture
@@ -48,14 +54,18 @@ def post_processed_data():
 ## TESTS
 
 
-def test_discard_initial_scans(atlas_data):
+def test_discard_initial_scans(atlas_data, regressors):
     """Check if the correct number of scans are discarded at the start of the
     image
     """
     n_scans = 3
-    img, regs = niimasker._discard_initial_scans(atlas_data, n_scans)
+
+    # function works on the underlying numpy array not the dataframe
+    regressors = regressors.values
+
+    img, regs = niimasker._discard_initial_scans(atlas_data, n_scans, regressors)
     assert img.get_data().shape[3] == atlas_data.get_data().shape[3] - n_scans
-    assert regs is None
+    assert regs.shape[0] == regressors.shape[0] - n_scans
 
 
 def test_set_masker(atlas_data):
