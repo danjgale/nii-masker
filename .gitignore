@@ -5,3 +5,4 @@ __pycache__/
 niimasker.egg-info
 playground/
 .pytest_cache/
+tests/data-dir

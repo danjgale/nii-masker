@@ -9,20 +9,24 @@ from niimasker import niimasker
 
 ## HELPERS
 
-def _get_atlas(data_dir):
-    return fetch_atlas_aal(data_dir=str(data_dir))
+def _get_atlas():
+    """Fetch small atlas for testing purposes"""
+    # save to path in test directory to only download atlas once
+    test_path = os.path.dirname(__file__)
+    data_dir = os.path.join(test_path, 'data-dir')
+    os.makedirs(data_dir, exist_ok=True)
+    return fetch_atlas_aal(data_dir=data_dir)
 
 
 @pytest.fixture
-def atlas_data(tmpdir):
+def atlas_data():
     """Create a 4D image that repeats the atlas over 10 volumes.
 
     Every voxel/ROI is the same value across time. Therefore we can test if
     proper values are extracted (and if they are in the proper order).
     """
 
-    atlas_dir = tmpdir.mkdir('data_dir')
-    atlas = _get_atlas(atlas_dir)
+    atlas = _get_atlas()
     img = nib.load(atlas['maps'])
     return nib.concat_images([img] * 10)
 
