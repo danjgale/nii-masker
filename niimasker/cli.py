@@ -134,7 +134,7 @@ def _check_params(params):
             params['labels'] = df['Label'].tolist()
 
     if params['mask_img'].startswith('nilearn:'):
-        cache = os.path.join(params['output_dir'], 'niimasker_cache')
+        cache = os.path.join(params['output_dir'], 'niimasker_data')
         os.makedirs(cache, exist_ok=True)
         atlas, labels = get_labelled_atlas(params['mask_img'], data_dir=cache,
                                            return_labels=True)
@@ -169,11 +169,14 @@ def main():
 
     # finalize parameters
     os.makedirs(params['output_dir'], exist_ok=True)
+    os.makedirs(os.path.join(params['output_dir'], 'niimasker_data'),
+                exist_ok=True)
     params = _check_params(params)
 
     # export command-line call and parameters to a file
     param_info = {'command': " ".join(sys.argv), 'parameters': params}
-    param_file = os.path.join(params['output_dir'], 'parameters.json')
+    param_file = os.path.join(params['output_dir'], 'niimasker_data',
+                              'parameters.json')
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
