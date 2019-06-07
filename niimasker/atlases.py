@@ -6,8 +6,35 @@ from nilearn.datasets import (fetch_atlas_destrieux_2009, fetch_atlas_yeo_2011,
                               fetch_atlas_talairach, fetch_atlas_schaefer_2018)
 
 
-def _get_atlas_function(query, data_dir=None):
-    """Fetch atlas based on atlas input string"""
+def get_labelled_atlas(query, data_dir=None, return_labels=True):
+    """Parses input query to determine which atlas to fetch and what version
+    of the atlas to use (if applicable).
+
+    Parameters
+    ----------
+    query : str
+        Input string in the following format:
+        nilearn:{atlas_name}:{atlas_parameters}. The following can be for
+        `atlas_name`: 'destrieux', 'yeo', 'aal', 'talairach', and 'schaefer'.
+        `atlas_parameters` is not available for the `destrieux` atlas.
+    data_dir : str, optional
+        Directory in which to save atlas data. By default None, which creates
+        a ~/nilearn_data/ directory as per nilearn.
+    return_labels : bool, optional
+        Whether to return atlas labels. Default is True. Not available for the
+        'basc' atlas.
+
+    Returns
+    -------
+    str, list or None
+        The atlas image and the accompanying labels (if provided)
+
+    Raises
+    ------
+    ValueError
+        Raised when the query does is not formatted correctly or if the no
+        match found.
+    """
 
     # extract parameters
     params = query.split(':')
@@ -55,5 +82,8 @@ def _get_atlas_function(query, data_dir=None):
         labels = atlas['labels']
     else:
         raise ValueError('No atlas detected. Check query string')
+
+    if not return_labels:
+        labels = None
 
     return img, labels
