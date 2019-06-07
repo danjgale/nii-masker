@@ -171,21 +171,12 @@ def main():
     os.makedirs(params['output_dir'], exist_ok=True)
     params = _check_params(params)
 
-    # display
-    print('INPUT PARAMETERS:')
-    for k, v in params.items():
-        if isinstance(v, list):
-            print('  {}:\n    {}'.format(k, "\n    ".join(v)))
-        else:
-            print('  {}: {}'.format(k, v))
-
     # export command-line call and parameters to a file
     param_info = {'command': " ".join(sys.argv), 'parameters': params}
     param_file = os.path.join(params['output_dir'], 'parameters.json')
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
-    print('RUNNING:')
     make_timeseries(**params)
 
 
