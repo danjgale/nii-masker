@@ -127,7 +127,7 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     ----------
     input_files : list of niimg-like
         List of input NIfTI functional images
-    roi_file : niimg-like
+    mask_img : niimg-like
         Image that contains region mask(s). Can either be a single binary mask
         for a single region, or a numerically labeled atlas file. 0 must
         indicate background (non-region voxels).
