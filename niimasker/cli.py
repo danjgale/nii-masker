@@ -5,10 +5,12 @@ import os
 import argparse
 import json
 import glob
+import tempfile
 import pandas as pd
 from natsort import natsorted
 
 from niimasker.niimasker import make_timeseries
+from niimasker.atlases import get_labelled_atlas
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -112,7 +114,6 @@ def _check_glob(x):
 def _check_params(params):
     """Ensure that required fields are included and correctly formatted"""
 
-
     if params['input_files'] is None:
         raise ValueError('Missing input files. Check files')
     else:
@@ -132,6 +133,14 @@ def _check_params(params):
             df = pd.read_csv(params['labels'])
             params['labels'] = df['Label'].tolist()
 
+    if params['mask_img'].startswith('nilearn:'):
+        cache = os.path.join(params['output_dir'], 'niimasker_cache')
+        os.makedirs(cache, exist_ok=True)
+        atlas, labels = get_labelled_atlas(params['mask_img'], data_dir=cache,
+                                           return_labels=True)
+        params['mask_img'] = atlas
+        params['labels'] = labels
+
     return params
 
 
@@ -150,6 +159,7 @@ def main():
     """Primary entrypoint in program"""
     params = vars(_cli_parser())
 
+    # read config file if available
     if params['config'] is not None:
         with open(params['config'], 'rb') as f:
             conf_params = json.load(f)
@@ -157,7 +167,10 @@ def main():
     else:
         params.pop('config')
 
+    # finalize parameters
+    os.makedirs(params['output_dir'], exist_ok=True)
     params = _check_params(params)
+
     # display
     print('INPUT PARAMETERS:')
     for k, v in params.items():
@@ -165,8 +178,6 @@ def main():
             print('  {}:\n    {}'.format(k, "\n    ".join(v)))
         else:
             print('  {}: {}'.format(k, v))
-
-    os.makedirs(params['output_dir'], exist_ok=True)
 
     # export command-line call and parameters to a file
     param_info = {'command': " ".join(sys.argv), 'parameters': params}
