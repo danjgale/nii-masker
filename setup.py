@@ -1,5 +1,12 @@
 from setuptools import setup, find_packages
 
+test_deps = ['pytest-cov',
+             'pytest']
+
+extras = {
+    'test': test_deps,
+}
+
 setup(
     name='niimasker',
     version='0.0.1',
@@ -18,10 +25,8 @@ setup(
         'scipy',
         'scikit-learn'
     ],
-    tests_require=[
-        'pytest',
-        'pytest-cov'
-    ],
+    tests_require=test_deps,
+    extras_require=extras,
     setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
@@ -29,4 +34,3 @@ setup(
             ]
         }
 )
-

@@ -9,13 +9,9 @@ python:
   - 3.6
   - 3.7
 
-# somewhat arbitrary to install dependencies beforehand
-before_install:
-  - pip install pytest
-
 # install the nii-masker package
 install:
-  - pip install .
+  - pip install .[test]
 
 # run pytest
 script:
