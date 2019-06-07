@@ -34,6 +34,13 @@ def _get_atlas_function(query, data_dir=None):
         atlas = fetch_atlas_aal(version=version, data_dir=data_dir)
         img = atlas['maps']
         labels = atlas['labels']
+    elif atlas_name == 'basc':
+
+        version, scale = sub_param.split('-')
+        atlas = fetch_atlas_basc_multiscale_2015(version=version,
+                                                 data_dir=data_dir)
+        img = atlas['scale{}'.format(scale.zfill(3))]
+        labels = None
     elif atlas_name == 'talairach':
         atlas = fetch_atlas_talairach(level_name=sub_param, data_dir=data_dir)
         img = atlas['maps']
