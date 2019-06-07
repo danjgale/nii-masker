@@ -162,7 +162,6 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
     mask_img = load_img(mask_img)
-    mask_img.to_filename(os.path.join(output_dir, 'niimasker_data', 'atlas.nii.gz'))
     masker = _set_masker(mask_img, **masker_kwargs)
 
     # set as list of NoneType if no regressor files; makes it easy for

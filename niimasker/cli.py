@@ -5,7 +5,7 @@ import os
 import argparse
 import json
 import glob
-import tempfile
+import shutil
 import pandas as pd
 from natsort import natsorted
 
@@ -175,10 +175,13 @@ def main():
 
     # export command-line call and parameters to a file
     param_info = {'command': " ".join(sys.argv), 'parameters': params}
-    param_file = os.path.join(params['output_dir'], 'niimasker_data',
-                              'parameters.json')
+
+    metadata_path = os.path.join(params['output_dir'], 'niimasker_data')
+    param_file = os.path.join(metadata_path, 'parameters.json')
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
+
+    shutil.copy2(params['mask_img'], metadata_path)
 
     make_timeseries(**params)
 

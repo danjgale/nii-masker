@@ -87,7 +87,3 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
         labels = None
 
     return img, labels
-
-
-def get_prob_atlas(query, data_dir=None, return_labels=True):
-    pass
