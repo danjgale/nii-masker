@@ -55,7 +55,7 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
         atlas = fetch_atlas_yeo_2011(data_dir=data_dir)
         img = atlas[sub_param]
         if '17' in sub_param:
-            labels = pd.read_csv(atlas['colors_17'], sep='\s+')['NONE'].tolist()
+            labels = pd.read_csv(atlas['colors_17'], sep=r'\s+')['NONE'].tolist()
     elif atlas_name == 'aal':
         version = 'SPM12' if sub_param is None else sub_param
         atlas = fetch_atlas_aal(version=version, data_dir=data_dir)
