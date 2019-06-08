@@ -85,5 +85,7 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
 
     if not return_labels:
         labels = None
+    else:
+        labels = labels.astype(str).tolist()
 
     return img, labels

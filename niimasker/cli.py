@@ -11,6 +11,7 @@ from natsort import natsorted
 
 from niimasker.niimasker import make_timeseries
 from niimasker.atlases import get_labelled_atlas
+from niimasker.plots import make_figures
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -178,13 +179,18 @@ def main():
 
     metadata_path = os.path.join(params['output_dir'], 'niimasker_data')
     param_file = os.path.join(metadata_path, 'parameters.json')
+    print(param_info)
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
     shutil.copy2(params['mask_img'], metadata_path)
 
+    # run extraction
     make_timeseries(**params)
 
+    # generate figures and report
+    make_figures(params['input_files'], params['output_dir'],
+                 params['mask_img'])
 
 if __name__ == '__main__':
     raise RuntimeError("`niimasker/cli.py` should not be run directly. Please "
