@@ -49,6 +49,17 @@ def plot_timeseries(data, cmap):
     return fig
 
 
+def plot_carpet(data):
+
+    plot_data = data.transpose().values
+
+    fig, ax = plt.subplots(figsize=(15, 10))
+    im = ax.imshow(plot_data, cmap='plasma')
+    ax.set_yticklabels(data.columns)
+
+    return fig
+
+
 def plot_mask(mask_img, func_img, cmap):
     """Overlay mask/atlas on mean functional image.
 
@@ -89,7 +100,7 @@ def plot_mask(mask_img, func_img, cmap):
     return fig
 
 
-def make_figures(functional_images, timeseries_dir, mask_img):
+def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False):
 
     cmap = matplotlib.cm.get_cmap('nipy_spectral')
 
@@ -100,7 +111,11 @@ def make_figures(functional_images, timeseries_dir, mask_img):
         timeseries_file = os.path.join(timeseries_dir,
                                        '{}_timeseries.tsv'.format(func_img_name))
         timeseries_data = pd.read_csv(timeseries_file, sep=r'\t', engine='python')
-        fig = plot_timeseries(timeseries_data, cmap)
+
+        if as_carpet:
+            fig = plot_carpet(timeseries_data)
+        else:
+            fig = plot_timeseries(timeseries_data, cmap)
         fig.savefig(os.path.join(timeseries_dir, 'niimasker_data',
                                  '{}_timeseries_plot.png'.format(func_img_name)))
 
