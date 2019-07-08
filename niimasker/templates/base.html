@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title> {{ title }} </title>
+  </head>
+  <body>
+    <h1>Image: {{ title }} </h1>
+
+    <h2>Parameters</h2>
+    <ul>
+      <li>Number of initial volumes discarded: {{ parameters["parameters"]["discard_scans"]}} </li>
+      <li>Standardized: {{ parameters["parameters"]["standardize"]}} </li>
+      <li>High pass filter cut-off (in Hz): {{ parameters["parameters"]["high_pass"]}} </li>
+      <li>Low pass filter cut-off (in Hz): {{ parameters["parameters"]["low_pass"]}} </li>
+      <li>Detrended: {{ parameters["parameters"]["detrend"]}} </li>
+      <li>Smoothing FWHM (in mm): {{ parameters["parameters"]["smoothing_fwhm"]}} </li>
+      <li>Nuissance and motion regressors: {{ parameters["parameters"]["regressor_names"]}} </li>
+    </ul>
+    <br>
+    {% include 'mask_overlay.html' %}
+    {% include 'timeseries.html' %}
+    {% include 'connectivity.html' %}
+  </body>
+</html>
