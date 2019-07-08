@@ -5,8 +5,10 @@ import numpy as np
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from nilearn.plotting import plot_roi
+from nilearn.plotting import plot_roi, plot_matrix
 from nilearn.image import mean_img
+from nilearn.connectome import ConnectivityMeasure
+from niimasker.report import make_report
 
 
 def plot_timeseries(data, cmap):
@@ -77,7 +79,6 @@ def plot_mask(mask_img, func_img, cmap):
     matplotlib.pyplot.figure
         Atlas/mask plot
     """
-
     # compute mean of functional image
     bg_img = mean_img(func_img)
 
@@ -85,24 +86,53 @@ def plot_mask(mask_img, func_img, cmap):
     fig, axes = plt.subplots(3, 1, figsize=(15, 6))
 
     g = plot_roi(mask_img, bg_img=bg_img, display_mode='z', axes=axes[0],
-                 alpha=.75, cut_coords=np.linspace(-50, 60, num=n_cuts),
-                 cmap=cmap, black_bg=False, annotate=False)
+                 alpha=.66, cut_coords=np.linspace(-50, 60, num=n_cuts),
+                 cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
     g = plot_roi(mask_img,  bg_img=bg_img, display_mode='x', axes=axes[1],
-                 alpha=.75, cut_coords=np.linspace(-60, 60, num=n_cuts),
-                 cmap=cmap, black_bg=False, annotate=False)
+                 alpha=.66, cut_coords=np.linspace(-60, 60, num=n_cuts),
+                 cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
     g = plot_roi(mask_img, bg_img=bg_img, display_mode='y', axes=axes[2],
-                 alpha=.75, cut_coords=np.linspace(-90, 60, num=n_cuts),
-                 cmap=cmap, black_bg=False, annotate=False)
+                 alpha=.66, cut_coords=np.linspace(-90, 60, num=n_cuts),
+                 cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
+    return fig
+
+
+def plot_connectome(data, tick_cmap, labels=None):
+
+    cm = ConnectivityMeasure(kind='correlation')
+    mat = cm.fit_transform([data])[0]
+
+    if labels is None:
+        labels = np.arange(data.shape[1])
+
+    fig, ax = plt.subplots(figsize=(15, 15))
+    plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    cmap_vals = np.linspace(0, 1, num=len(labels))
+    for i, lab in enumerate(labels):
+        ax.get_xticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
+        ax.get_yticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
 
     return fig
 
 
-def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False):
+def plot_qcfc(motion_metric):
+    pass
 
-    cmap = matplotlib.cm.get_cmap('nipy_spectral')
+
+def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False,
+                 connectivity_metrics=True, motion_metric=None):
+
+    roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
+    figure_dir = os.path.join(timeseries_dir, 'niimasker_data/figures/')
+    os.makedirs(figure_dir, exist_ok=True)
+    report_dir = os.path.join(timeseries_dir, 'reports')
+    os.makedirs(report_dir, exist_ok=True)
 
     for func in functional_images:
 
@@ -112,13 +142,33 @@ def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False):
                                        '{}_timeseries.tsv'.format(func_img_name))
         timeseries_data = pd.read_csv(timeseries_file, sep=r'\t', engine='python')
 
+        # plot and save timeseries
         if as_carpet:
             fig = plot_carpet(timeseries_data)
         else:
-            fig = plot_timeseries(timeseries_data, cmap)
-        fig.savefig(os.path.join(timeseries_dir, 'niimasker_data',
-                                 '{}_timeseries_plot.png'.format(func_img_name)))
+            fig = plot_timeseries(timeseries_data, roi_cmap)
+        timeseries_fig = os.path.join(figure_dir,
+                                      '{}_timeseries_plot.png'.format(func_img_name))
+        fig.savefig(timeseries_fig)
+        # plot and save mask overlay
+        fig = plot_mask(mask_img, func, roi_cmap)
+        overlay_fig = os.path.join(figure_dir,
+                                 '{}_atlas_plot.png'.format(func_img_name))
+        fig.savefig(overlay_fig, bbox_inches='tight')
 
-        fig = plot_mask(mask_img, func, cmap)
-        fig.savefig(os.path.join(timeseries_dir, 'niimasker_data',
-                                 '{}_atlas_plot.png'.format(func_img_name)))
+        # place-holder for connectivity plots
+        if connectivity_metrics:
+            fig = plot_connectome(timeseries_data.values, roi_cmap,
+                                  timeseries_data.columns)
+            connectome_fig = os.path.join(figure_dir, '{}_connectome_plot.png'.format(func_img_name))
+            fig.savefig(connectome_fig, bbox_inches='tight')
+            # plot_qcfc(motion_metric)
+            qcfc_fig = os.path.join(figure_dir, '{}_qcfc_plot.png'.format(func_img_name))
+            # fig.savefig(qcfc_fig)
+        else:
+            connectome_fig = None
+            qcfc_fig = None
+
+        # generate report
+        make_report(func, timeseries_dir, overlay_fig, timeseries_fig,
+                    connectome_fig, qcfc_fig)
