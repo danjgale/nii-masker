@@ -3,13 +3,15 @@ import json
 from jinja2 import Template, Environment, FileSystemLoader
 
 def make_report(func_img, timeseries_dir, overlay_fig, timeseries_fig,
-                connectome_fig=None, qcfc_fig=None):
+                connectome_fig=None, regressor_fig=None):
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
     func_img_name = os.path.basename(func_img).split('.')[0]
     if connectome_fig is not None:
         connectome_fig = os.path.abspath(connectome_fig)
+    if regressor_fig is not None:
+        regressor_fig = os.path.abspath(regressor_fig)
 
     param_file = os.path.join(timeseries_dir, 'niimasker_data/parameters.json')
     with open(param_file, 'r') as f:
@@ -23,7 +25,8 @@ def make_report(func_img, timeseries_dir, overlay_fig, timeseries_fig,
                              func_img=os.path.abspath(func_img),
                              overlay_fig=os.path.abspath(overlay_fig),
                              timeseries_fig=os.path.abspath(timeseries_fig),
-                             connectome_fig=connectome_fig
+                             connectome_fig=connectome_fig,
+                             regressor_fig=regressor_fig
                              )
 
     save_file = os.path.join(timeseries_dir,
