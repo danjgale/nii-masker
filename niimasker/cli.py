@@ -8,9 +8,19 @@ import glob
 import shutil
 import pandas as pd
 from natsort import natsorted
+# import for version reporting
+from platform import python_version
+import nilearn
+import nibabel
+import scipy
+import sklearn
+import numpy
+import natsort
+import pkg_resources  # for niimasker itself
 
 from niimasker.niimasker import make_timeseries
 from niimasker.atlases import get_labelled_atlas
+from niimasker.plots import make_figures
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -173,17 +183,40 @@ def main():
                 exist_ok=True)
     params = _check_params(params)
 
+    # add in meta data
+    versions = {
+        'python': python_version(),
+        'niimasker': pkg_resources.require("niimasker")[0].version,
+        'numpy': numpy.__version__,
+        'scipy': scipy.__version__,
+        'pandas': pd.__version__,
+        'scikit-learn': sklearn.__version__,
+        'nilearn': nilearn.__version__,
+        'nibabel': nibabel.__version__,
+        'natsort': natsort.__version__
+    }
+
     # export command-line call and parameters to a file
-    param_info = {'command': " ".join(sys.argv), 'parameters': params}
+    param_info = {'command': " ".join(sys.argv), 'parameters': params,
+                  'meta_data': versions}
 
     metadata_path = os.path.join(params['output_dir'], 'niimasker_data')
     param_file = os.path.join(metadata_path, 'parameters.json')
+
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
     shutil.copy2(params['mask_img'], metadata_path)
 
+    # run extraction
     make_timeseries(**params)
+
+    print('  Making reports...')
+    # generate figures and report
+    if params['as_voxels']:
+        make_figures(params, as_carpet=True, connectivity_metrics=False)
+    else:
+        make_figures(params)
 
 
 if __name__ == '__main__':

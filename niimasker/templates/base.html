@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<style type="text/css">
+  img {
+    max-width: 100%;
+    height: auto;
+    width: auto\9; /* ie8 */
+  }
+</style>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title> {{ title }} </title>
+  </head>
+  <body>
+    <h1>Image: {{ title }} </h1>
+
+    <h2>Parameters</h2>
+    <ul>
+      <li>Atlas/ROI mask image: {{ parameters["parameters"]["mask_img"] }}</li>
+      <li>Number of initial volumes discarded: {{ parameters["parameters"]["discard_scans"]}} </li>
+      <li>Standardized: {{ parameters["parameters"]["standardize"]}} </li>
+      <li>High pass filter cut-off (in Hz): {{ parameters["parameters"]["high_pass"]}} </li>
+      <li>Low pass filter cut-off (in Hz): {{ parameters["parameters"]["low_pass"]}} </li>
+      <li>Detrended: {{ parameters["parameters"]["detrend"]}} </li>
+      <li>Smoothing FWHM (in mm): {{ parameters["parameters"]["smoothing_fwhm"]}} </li>
+      <li>Nuissance and motion regressors: {{ parameters["parameters"]["regressor_names"]}} </li>
+    </ul>
+
+    <h2>Pipeline Details</h2>
+    <ul>
+        <li>Package versions:</li>
+          <ul>
+            {% for key, value in parameters["meta_data"].items() %}
+              <li>
+                  {{ key }}: {{ value }}
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
+        <li>Discarded volumes at the start of the run/scan are removed prior to any extraction and processing</li>
+        <li>Timecourses are extracted using nilearn (<a href="https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full">Abraham et al, 2014</a name="Abraham et al, 2014">)</li>
+        <li>Specified processing steps are performed in the following order:
+          <ol>
+            <li>Spatial smoothing</li>
+            <li>Detrending</li>
+            <li>Temporal filtering</li>
+            <li>Confound regression</li>
+            <li>Signal standardization</li>
+          </ol>
+        </li>
+        <li>Removal of counfounds are done orthogonally to temporal filters, as per
+            <a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/hbm.24528">Lindquist et al (2019)<a name="Lindquist et al (2019)"></li>
+    </ul>
+    <br>
+    <h2>Region of Interest(s) Overlay on the Mean Functional Image</h1>
+      <div style="max-width:100%;">
+          <img src="{{ overlay_fig }}" />
+      </div>
+    <h2>Extracted Timerseries</h1>
+        <div style="max-width:100%;">
+            <img src="{{ timeseries_fig }}" />
+        </div>
+    {% if connectome_fig is not none %}
+      <h2>Correlations Among Extracted Timeseries</h1>
+        <div style="max-width:100%;">
+            <img src="{{ connectome_fig }}" />
+        </div>
+      {% if regressor_fig is not none %}
+      <h2>Correlations Between Extracted Timeseries and Regressors</h1>
+        <div style="max-width:100%;">
+            <img src="{{ regressor_fig }}" />
+      </div>
+      {%endif %}
+    {%endif %}
+  </body>
+</html>

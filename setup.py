@@ -9,7 +9,7 @@ extras = {
 
 setup(
     name='niimasker',
-    version='0.0.1',
+    version='0.0.2',
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
     license='MIT',
@@ -23,7 +23,8 @@ setup(
         'nilearn>=0.5.0',
         'natsort',
         'scipy',
-        'scikit-learn'
+        'scikit-learn',
+        'jinja2'
     ],
     tests_require=test_deps,
     extras_require=extras,
