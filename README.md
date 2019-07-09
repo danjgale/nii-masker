@@ -297,6 +297,7 @@ Note that extracting voxelwise data from a multi-region atlas is not currently s
   "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
 }
 ```
+(Note: Remove `/ses*/` if you have single-session data)
 
 Thanks to the BIDS structure of the data, you can provide wildcard patterns for `input_files` and `regressor_files`, and `niimasker` will automatically align regressor files with their respective functional image. From here, you can add in the remaining the parameters you want. An equivalent configuration to the previous example is as follows:
 
