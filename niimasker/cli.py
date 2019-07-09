@@ -189,8 +189,14 @@ def main():
     make_timeseries(**params)
 
     # generate figures and report
-    make_figures(params['input_files'], params['output_dir'],
-                 params['mask_img'])
+    if params['as_voxels']:
+        make_figures(params['input_files'], params['output_dir'],
+                    params['mask_img'], as_carpet=True,
+                    connectivity_metrics=False)
+    else:
+        make_figures(params['input_files'], params['output_dir'],
+                    params['mask_img'])
+
 
 if __name__ == '__main__':
     raise RuntimeError("`niimasker/cli.py` should not be run directly. Please "

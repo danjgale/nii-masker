@@ -54,11 +54,19 @@ def plot_timeseries(data, cmap):
 def plot_carpet(data):
 
     plot_data = data.transpose().values
-
-    fig, ax = plt.subplots(figsize=(15, 10))
-    im = ax.imshow(plot_data, cmap='plasma')
-    ax.set_yticklabels(data.columns)
-
+    vlim = np.max(np.abs(plot_data))
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(15, 8),
+                           gridspec_kw={'height_ratios': [.2, 1]})
+    axes[0].plot(np.arange(plot_data.shape[1]), np.mean(plot_data, axis=0),
+                 c='k')
+    axes[0].set_ylabel('Mean BOLD')
+    im = axes[1].imshow(plot_data, cmap='coolwarm', aspect='auto', vmin=-vlim,
+                   vmax=vlim)
+    cbar = axes[1].figure.colorbar(im, ax=axes[1], orientation='horizontal',
+                                   fraction=.05)
+    axes[1].set_ylabel('Voxels')
+    axes[1].set_xlabel('Volumes')
+    fig.tight_layout()
     return fig
 
 
@@ -105,8 +113,7 @@ def plot_connectome(data, tick_cmap, labels=None):
     cm = ConnectivityMeasure(kind='correlation')
     mat = cm.fit_transform([data])[0]
 
-    if labels is None:
-        labels = np.arange(data.shape[1])
+    labels = [u"\u25A0"] * data.shape[1]
 
     fig, ax = plt.subplots(figsize=(15, 15))
     plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1)
@@ -117,7 +124,8 @@ def plot_connectome(data, tick_cmap, labels=None):
     for i, lab in enumerate(labels):
         ax.get_xticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
         ax.get_yticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
-
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=0, fontdict={'fontsize':10, 'verticalalignment': 'center', 'horizontalalignment': 'center'})
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontdict={'fontsize':10, 'verticalalignment': 'center', 'horizontalalignment': 'center'})
     return fig
 
 
@@ -128,7 +136,6 @@ def plot_qcfc(motion_metric):
 def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False,
                  connectivity_metrics=True, motion_metric=None):
 
-    roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
     figure_dir = os.path.join(timeseries_dir, 'niimasker_data/figures/')
     os.makedirs(figure_dir, exist_ok=True)
     report_dir = os.path.join(timeseries_dir, 'reports')
@@ -142,14 +149,22 @@ def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False,
                                        '{}_timeseries.tsv'.format(func_img_name))
         timeseries_data = pd.read_csv(timeseries_file, sep=r'\t', engine='python')
 
+        n_rois = timeseries_data.shape[1]
+        if n_rois > 1:
+            roi_cmap = matplotlib.cm.get_cmap('binary')
+        else:
+            roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
+
         # plot and save timeseries
         if as_carpet:
             fig = plot_carpet(timeseries_data)
+            bbox_inches = 'tight'
         else:
             fig = plot_timeseries(timeseries_data, roi_cmap)
+            bbox_inches = None
         timeseries_fig = os.path.join(figure_dir,
                                       '{}_timeseries_plot.png'.format(func_img_name))
-        fig.savefig(timeseries_fig)
+        fig.savefig(timeseries_fig, bbox_inches=bbox_inches)
         # plot and save mask overlay
         fig = plot_mask(mask_img, func, roi_cmap)
         overlay_fig = os.path.join(figure_dir,

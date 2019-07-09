@@ -8,6 +8,8 @@ def make_report(func_img, timeseries_dir, overlay_fig, timeseries_fig,
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
     func_img_name = os.path.basename(func_img).split('.')[0]
+    if connectome_fig is not None:
+        connectome_fig = os.path.abspath(connectome_fig)
 
     param_file = os.path.join(timeseries_dir, 'niimasker_data/parameters.json')
     with open(param_file, 'r') as f:
@@ -21,7 +23,7 @@ def make_report(func_img, timeseries_dir, overlay_fig, timeseries_fig,
                              func_img=os.path.abspath(func_img),
                              overlay_fig=os.path.abspath(overlay_fig),
                              timeseries_fig=os.path.abspath(timeseries_fig),
-                             connectome_fig=os.path.abspath(connectome_fig)
+                             connectome_fig=connectome_fig
                              )
 
     save_file = os.path.join(timeseries_dir,
