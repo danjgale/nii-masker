@@ -77,14 +77,19 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
     timeseries = masker.fit_transform(img, confounds=confounds)
 
     if isinstance(masker, NiftiMasker):
+        # single ROI extracted
         if as_voxels:
-            labels = ['voxel{}'.format(i)
+            labels = ['voxel {}'.format(int(i))
                       for i in np.arange(timeseries.shape[1])]
         else:
             timeseries = np.mean(timeseries, axis=1)
             labels = ['roi'] if roi_labels is None else roi_labels
     else:
-        labels = masker.labels_ if roi_labels is None else roi_labels
+        # multiple regions from an atlas were extracted
+        if roi_labels is None:
+            labels = ['roi {}'.format(int(i)) for i in masker.labels_]
+        else:
+            labels = roi_labels
 
     return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
