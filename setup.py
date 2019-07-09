@@ -23,7 +23,8 @@ setup(
         'nilearn>=0.5.0',
         'natsort',
         'scipy',
-        'scikit-learn'
+        'scikit-learn',
+        'jinja2'
     ],
     tests_require=test_deps,
     extras_require=extras,
