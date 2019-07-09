@@ -202,7 +202,7 @@ def main():
 
     metadata_path = os.path.join(params['output_dir'], 'niimasker_data')
     param_file = os.path.join(metadata_path, 'parameters.json')
-    print(param_info)
+
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
