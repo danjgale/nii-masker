@@ -10,7 +10,6 @@ This is a simple command-line wrapper for `nilearn`'s [Masker objects](https://n
 
 If you are using this project, please cite `nilearn`:
 
-
 Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, J., … Varoquaux, G. (2014). Machine learning for neuroimaging with scikit-learn. *Frontiers in Neuroinformatics*, *8*, 14.
 
 [Link to paper](https://www.frontiersin.org/articles/10.3389/fninf.2014.00014/full). See also: [Nilearn documentation](https://nilearn.github.io/index.html).
@@ -26,6 +25,7 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 - nilearn>=0.5.0
 - nibabel
 - natsort
+- jinja2
 
 First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
@@ -78,7 +78,9 @@ optional arguments:
   --regressor_names regressor_names [regressor_names ...]
                         The regressor names to use for confound regression.
                         Applies to all regressor files and the names must
-                        correspond to headers in each file
+                        correspond to headers in each file. If no regressor
+                        names are provided, but files are, all regressors in
+                        regressor files are used.
   --realign_derivs      Whether to include temporal derivatives of realignment
                         regressors. --t_r must be specified.
   --as_voxels           Whether to extract out the timeseries of each voxel
@@ -90,10 +92,10 @@ optional arguments:
                         Must be included if temporal filtering or realignment
                         derivatives are specified.
   --high_pass high_pass
-                        High pass filter cut off in Hertz. If notspecified, no
-                        filtering is done.
-  --low_pass low_pass   Low pass filter cut off in Hertz. If not specified, no
-                        filtering is done.
+                        High pass filter cut off in Hertz. If it is not
+                        specified, no filtering is done.
+  --low_pass low_pass   Low pass filter cut off in Hertz. If it is not
+                        specified, no filtering is done.
   --detrend             Whether to detrend the data. Default False
   --smoothing_fwhm smoothing_fwhm
                         Smoothing kernel FWHM (in mm) if spatial smoothing is
@@ -109,7 +111,7 @@ optional arguments:
                         to include.
 ```
 
-Most of the parameters map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you label your ROIs instead of just using the numerical indices. Furthermore, specifying `--n_jobs` parallelizes the extraction to reduce runtime.
+Many of the parameters map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you label your ROIs instead of just using the numerical indices. Furthermore, specifying `--n_jobs` parallelizes the extraction to reduce runtime.
 
 Of course, if you want full `nilearn` flexibility, you're better off using `nilearn` and Python directly.
 
@@ -122,11 +124,11 @@ All other arguments are optional.
 
 ### Example
 
-Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region masks are stored in `atlas.nii.gz`, and have the names "region1" and "region2". With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`) along with the computed derivatives of motion realignment parameters. You also want to detrend and high-pass filter your data, and finally standardize each signal.
+Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region masks are stored in `atlas.nii.gz`, and have the names "region1" and "region2". With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`), detrend, high-pass filter, and finally standardize your data. The command to accomplish this is:
 
 ```bash
 niimasker output/ -i img1.nii.gz -m atlas.nii.gz --labels region1 region2 \
---regressor_files confounds_for_img1.tsv --realign_derivs --t_r 2 \
+--regressor_files confounds_for_img1.tsv --t_r 2 \
 --high_pass 0.01 --detrend --standardize
 ```
 
@@ -140,7 +142,7 @@ The averaged BOLD timeseries for `region1` and `region2` are stored in `output/i
 | .40925  | 1.39835 |
 | -.02311 | .22324  |
 
-To keep track of everything, a `parameters.json` file is also saved to the output directory, which reports a) the exact command-line call b) all parameters used for extraction.
+To keep track over everything, a visual report is generated which shows the extracted timeseries, the region overlays on the averaged functional image, and all the parameters used in the pipeline.
 
 ## The configuration JSON file
 
@@ -149,10 +151,9 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 ```JSON
 {
   "mask_img": "",
-  "labels": "",
+  "labels": [],
   "regressor_files": null,
-  "regressor_names": null,
-  "realign_derivs": false,
+  "regressor_names": [],
   "as_voxels": false,
   "standardize": false,
   "t_r": null,
@@ -160,13 +161,14 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "high_pass": null,
   "low_pass": null,
   "smoothing_fwhm": null,
+  "discard_scans": null,
   "n_jobs": 1
 }
 ```
 
 All parameter defaults are shown above. Not all parameters need to be included in the configuration file; only the ones you wish to use. An example use-case that combines both the command-line parameters and configuration file:
 
-`niimask output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
+`niimasker output/ -i img_1.nii.gz img_2.nii.gz -c config.json`
 
 Where `config.json` is:
 
@@ -194,10 +196,131 @@ Where `config.json` is:
 }
 ```
 
-This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant. Therefore, constants across subjects can be stored in the project's configuration file. The configuration file helps you keep track of what you did to extract out the timeseries.
+This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant. Therefore, constants across subjects can be stored in the project's configuration file.
 
-# Upcoming features
-- Built-in support for atlases that can be fetched directly from `nilearn`
-- A comprehensive visual report (as an `html` file) in order to get a birds-eye view of the timecourses. Easily check for quality issues (e.g., amplitude spikes from motion) and how the data were generated. Similar to what is done with [fmriprep](https://fmriprep.readthedocs.io/en/stable/).
-- Option to include event files (similar to what SPM or FSL require for first-level analyses) that labels each timepoint based on the task and conditions (only relevant for task-based fMRI).
-- Turn this into a [bids-app](http://bids-apps.neuroimaging.io/), thus providing full support for BIDS-formatted datasets such as those produced by [fmriprep](https://fmriprep.readthedocs.io/en/stable/).
+## Working with single ROI masks
+
+`niimasker` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
+
+```JSON
+{
+  "input_files": "img1.nii.gz",
+  "mask_img": "motor_cortex.nii.gz",
+  "as_voxels": true,
+  "standardize": true,
+  "t_r": 2,
+  "detrend": true,
+  "high_pass": 0.01,
+}
+```
+
+Command:
+
+`niimasker output/ -c config.json`
+
+If you want to extract out voxelwise data for more than one region, you'll have to provide a new `mask_img` each time, and thus run `niimasker` separately for each ROI. Thanks to the configuration file, however, you can just change the command-line call, but keep the configuration file the same. For example, say you have two functional images (each with a TR=2) and you want to extract out two ROIs and perform some temporal filtering. Set the `config.json` to:
+
+```JSON
+{
+  "input_files": ["img1.nii.gz", "img2.nii.gz"],
+  "as_voxels": true,
+  "standardize": true,
+  "t_r": 2,
+  "detrend": true,
+  "high_pass": 0.01,
+  "low_pass": null,
+  "smoothing_fwhm": null,
+}
+```
+
+Then, you can iteratively call niimasker using a for-loop (python example shown):
+
+```python
+import subprocess
+
+rois = ['motor_cortex.nii.gz', 'premotor_cortex.nii.gz']
+
+for mask in rois:
+    roi_name = mask.split('.')[0] # remove file extension
+    cmd = ('niimasker timeseries/{} -m {} -c config.json'.format(roi_name, mask))
+    print(cmd)
+    subprocess.run(cmd, shell=True)
+```
+
+Each iteration changes the ROI and output directory, but the configuration is the same for all ROIs.
+
+## Working with an atlas
+
+`niimasker` also lets you use an atlas that contains multiple regions, where voxels belonging to each region are labeled with numerical index. This is a typical functional connectivity use-case where you're interested in analyzing the relationships between the timeseries of multiple regions. A typical `config.json` for two functional images (TR=2), where you want to extract data from a 3-region atlas and perform some additional processing would be:
+
+```JSON
+{
+  "input_files": ["img1.nii.gz", "img2.nii.gz"],
+  "mask_img": "some_atlas.nii.gz",
+  "labels": ["region1", "region2", "region2"],
+  "regressor_files": [
+    "confounds1.tsv",
+    "confounds2.tsv"
+  ],
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
+  "standardize": true,
+  "t_r": 2,
+  "high_pass": 0.01,
+  "detrend": true,
+  "discard_scans": 4,
+  "smoothing_fwhm": 6
+}
+```
+
+Command:
+
+`niimasker output/ -c config.json`
+
+Note that extracting voxelwise data from a multi-region atlas is not currently supported (as in `nilearn`). However, this approach is very efficient if you're extracting out the mean timeseries for many regions defined by an atlas.
+
+## Working with fmriprep data
+
+`niimasker` is ideally meant for BIDS-formatted data (although currently not requiring it), and is intended to seamlessly work with [fmriprep](https://fmriprep.readthedocs.io/en/stable/). To extract data from an entire fmriprep dataset, set your `input_files` and `regressor_files` as the following in your `config.json`:
+
+```JSON
+{
+  "input_files": "fmriprep/sub*/ses*/func/*preproc_bold.nii.gz",
+  "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
+}
+```
+
+Thanks to the BIDS structure of the data, you can provide wildcard patterns for `input_files` and `regressor_files`, and `niimasker` will automatically align regressor files with their respective functional image. From here, you can add in the remaining the parameters you want. An equivalent configuration to the previous example is as follows:
+
+```JSON
+{
+  "input_files": "fmriprep/sub*/ses*/func/*preproc_bold.nii.gz",
+  "mask_img": "some_atlas.nii.gz",
+  "labels": ["region1", "region2", "region2"],
+  "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "csf",
+    "white_matter",
+  ],
+  "standardize": true,
+  "t_r": 2,
+  "high_pass": 0.01,
+  "detrend": true,
+  "discard_scans": 4,
+  "smoothing_fwhm": 6
+}
+```

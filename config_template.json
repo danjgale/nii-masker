@@ -1,9 +1,8 @@
 {
   "mask_img": "",
-  "labels": "",
+  "labels": [],
   "regressor_files": null,
-  "regressor_names": null,
-  "realign_derivs": false,
+  "regressor_names": [],
   "as_voxels": false,
   "standardize": false,
   "t_r": null,
@@ -11,5 +10,6 @@
   "high_pass": null,
   "low_pass": null,
   "smoothing_fwhm": null,
+  "discard_scans": null,
   "n_jobs": 1
 }
