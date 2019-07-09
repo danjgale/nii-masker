@@ -2,6 +2,7 @@
 
 import os
 import numpy as np
+from scipy.stats import pearsonr
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -57,14 +58,20 @@ def plot_carpet(data):
     vlim = np.max(np.abs(plot_data))
     fig, axes = plt.subplots(2, 1, sharex=True, figsize=(15, 8),
                            gridspec_kw={'height_ratios': [.2, 1]})
-    axes[0].plot(np.arange(plot_data.shape[1]), np.mean(plot_data, axis=0),
-                 c='k')
-    axes[0].set_ylabel('Mean BOLD')
+    # mean BOLD plot
+    x = np.arange(plot_data.shape[1])
+    y = np.mean(plot_data, axis=0)
+    y_err = np.std(plot_data, axis=0)
+    axes[0].plot(x, y, c='k')
+    axes[0].fill_between(x, y - y_err, y + y_err, facecolor='gray', alpha=.4)
+    axes[0].set_ylabel('Mean BOLD\n (±1 SD)')
+
+    # carpet plot
     im = axes[1].imshow(plot_data, cmap='coolwarm', aspect='auto', vmin=-vlim,
                    vmax=vlim)
     cbar = axes[1].figure.colorbar(im, ax=axes[1], orientation='horizontal',
                                    fraction=.05)
-    axes[1].set_ylabel('Voxels')
+    axes[1].set_ylabel('Voxelwise BOLD')
     axes[1].set_xlabel('Volumes')
     fig.tight_layout()
     return fig
@@ -113,10 +120,15 @@ def plot_connectome(data, tick_cmap, labels=None):
     cm = ConnectivityMeasure(kind='correlation')
     mat = cm.fit_transform([data])[0]
 
-    labels = [u"\u25A0"] * data.shape[1]
+    if data.shape[1] < 200:
+        labels = ['{} '.format(x) + u"\u25A0" for x in np.arange(data.shape[1])]
+    else:
+        # exclude numerical labels with large atlases
+        labels = [u"\u25A0"] * data.shape[1]
 
     fig, ax = plt.subplots(figsize=(15, 15))
-    plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1)
+    plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1,
+                cmap='coolwarm')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
@@ -124,34 +136,74 @@ def plot_connectome(data, tick_cmap, labels=None):
     for i, lab in enumerate(labels):
         ax.get_xticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
         ax.get_yticklabels()[i].set_color(tick_cmap(cmap_vals[i]))
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=0, fontdict={'fontsize':10, 'verticalalignment': 'center', 'horizontalalignment': 'center'})
-    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontdict={'fontsize':10, 'verticalalignment': 'center', 'horizontalalignment': 'center'})
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90,
+                       fontdict={'verticalalignment': 'top', 'horizontalalignment': 'center'})
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0,
+                       fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
     return fig
 
 
-def plot_qcfc(motion_metric):
-    pass
+def plot_regressor_correlations(data, regressors, cmap):
+
+    # regressor by roi matrix
+    result = np.zeros((regressors.shape[1], data.shape[1]))
+    for i in np.arange(regressors.shape[1]):
+        for j in np.arange(data.shape[1]):
+            regressor = regressors.values[:, i]
+            timeseries = data.values[:, j]
+            r, p = pearsonr(timeseries, regressor)
+            result[i, j] = r
+
+    cmap_vals = np.linspace(0, 1, num=data.shape[1])
+    fig, ax = plt.subplots(figsize=(15, 8))
+    im = ax.imshow(result, cmap='coolwarm', aspect='auto', vmin=-1, vmax=1)
+    ax.figure.colorbar(im, ax=ax, fraction=.05)
+    ax.set_xticks(np.arange(data.shape[1]))
+
+    if data.shape[1] < 200:
+        labels = ['{} '.format(x) + u"\u25A0" for x in np.arange(data.shape[1])]
+    else:
+        # exclude numerical labels with large atlases
+        labels = [u"\u25A0"] * data.shape[1]
+
+    ax.set_xticklabels(labels, rotation=90,
+                       fontdict={'verticalalignment': 'top', 'horizontalalignment': 'center'})
+    for i, lab in enumerate(data.columns):
+        ax.get_xticklabels()[i].set_color(cmap(cmap_vals[i]))
+    ax.set_yticks(np.arange(regressors.shape[1]))
+    ax.set_yticklabels(regressors.columns, rotation=0,
+                       fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
+    return fig
 
 
-def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False,
-                 connectivity_metrics=True, motion_metric=None):
+def make_figures(parameters, as_carpet=False, connectivity_metrics=True):
+
+    functional_images = parameters['input_files']
+    timeseries_dir = parameters['output_dir']
+    mask_img = parameters['mask_img']
 
     figure_dir = os.path.join(timeseries_dir, 'niimasker_data/figures/')
     os.makedirs(figure_dir, exist_ok=True)
     report_dir = os.path.join(timeseries_dir, 'reports')
     os.makedirs(report_dir, exist_ok=True)
 
-    for func in functional_images:
+    for i, func in enumerate(functional_images):
 
         func_img_name = os.path.basename(func).split('.')[0]
-
         timeseries_file = os.path.join(timeseries_dir,
                                        '{}_timeseries.tsv'.format(func_img_name))
         timeseries_data = pd.read_csv(timeseries_file, sep=r'\t', engine='python')
 
+        if ((any([x.startswith('roi') for x in timeseries_data.columns])) |
+           (any([x.startswith('voxel') for x in timeseries_data.columns]))):
+           pass
+        else:
+            timeseries_data.columns = ['{}. '.format(y) + x
+                                 for y, x in enumerate(timeseries_data.columns)]
+
         n_rois = timeseries_data.shape[1]
-        if n_rois > 1:
-            roi_cmap = matplotlib.cm.get_cmap('binary')
+        if (n_rois == 1) | as_carpet:
+            roi_cmap = matplotlib.cm.get_cmap('gist_yarg')
         else:
             roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
 
@@ -177,13 +229,30 @@ def make_figures(functional_images, timeseries_dir, mask_img, as_carpet=False,
                                   timeseries_data.columns)
             connectome_fig = os.path.join(figure_dir, '{}_connectome_plot.png'.format(func_img_name))
             fig.savefig(connectome_fig, bbox_inches='tight')
-            # plot_qcfc(motion_metric)
-            qcfc_fig = os.path.join(figure_dir, '{}_qcfc_plot.png'.format(func_img_name))
-            # fig.savefig(qcfc_fig)
+
+            if parameters['regressor_files'] is not None:
+
+                all_regressors = pd.read_csv(parameters['regressor_files'][i],
+                                             sep=r'\t', engine='python')
+                regressors = all_regressors[parameters['regressor_names']]
+                if parameters['discard_scans'] is not None:
+                    n_scans = parameters['discard_scans']
+                    regressors = regressors.iloc[n_scans:, :]
+                else:
+                    regressors = regressors
+
+
+                fig = plot_regressor_correlations(timeseries_data,
+                                                  regressors, roi_cmap)
+                regressor_fig = os.path.join(figure_dir,
+                                         '{}_regressor_correlation_plot.png'.format(func_img_name))
+                fig.savefig(regressor_fig, bbox_inches='tight')
+            else:
+                regressor_fig = None
         else:
             connectome_fig = None
-            qcfc_fig = None
+            regressor_fig = None
 
         # generate report
         make_report(func, timeseries_dir, overlay_fig, timeseries_fig,
-                    connectome_fig, qcfc_fig)
+                    connectome_fig, regressor_fig)
