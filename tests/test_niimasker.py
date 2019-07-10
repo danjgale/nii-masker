@@ -60,17 +60,17 @@ def post_processed_data(atlas_data, regressors):
 ## TESTS
 
 
-def test_discard_initial_scans(atlas_data, regressors):
-    """Check if the correct number of scans are discarded at the start of the
-    image
-    """
-    # function works on the underlying numpy array not the dataframe
-    regressors = regressors.values
+# def test_discard_initial_scans(atlas_data, regressors):
+#     """Check if the correct number of scans are discarded at the start of the
+#     image
+#     """
+#     # function works on the underlying numpy array not the dataframe
+#     regressors = regressors.values
 
-    n_scans = 3
-    img, regs = niimasker._discard_initial_scans(atlas_data, n_scans, regressors)
-    assert img.get_data().shape[3] == atlas_data.get_data().shape[3] - n_scans
-    assert regs.shape[0] == regressors.shape[0] - n_scans
+#     n_scans = 3
+#     img, regs = niimasker._discard_initial_scans(atlas_data, n_scans, regressors)
+#     assert img.get_data().shape[3] == atlas_data.get_data().shape[3] - n_scans
+#     assert regs.shape[0] == regressors.shape[0] - n_scans
 
 
 def test_set_masker(atlas_data):
