@@ -23,7 +23,16 @@
       <li>Low pass filter cut-off (in Hz): {{ parameters["parameters"]["low_pass"]}} </li>
       <li>Detrended: {{ parameters["parameters"]["detrend"]}} </li>
       <li>Smoothing FWHM (in mm): {{ parameters["parameters"]["smoothing_fwhm"]}} </li>
-      <li>Nuissance and motion regressors: {{ parameters["parameters"]["regressor_names"]}} </li>
+      {% if regressor_file is not none %}
+        <li>Regressor file: {{ regressor_file }} </li>
+        <li>Nuissance and motion regressors:
+          <ul>
+            {% for i in parameters["parameters"]["regressor_names"] %}
+              <li>{{ i }}</li>
+            {% endfor %}
+          </ul>
+        </li>
+      {%endif %}
     </ul>
 
     <h2>Pipeline Details</h2>

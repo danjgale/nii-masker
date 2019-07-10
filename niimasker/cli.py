@@ -20,7 +20,6 @@ import pkg_resources  # for niimasker itself
 
 from niimasker.niimasker import make_timeseries
 from niimasker.atlases import get_labelled_atlas
-from niimasker.plots import make_figures
 
 def _cli_parser():
     """Reads command line arguments and returns input specifications"""
@@ -67,10 +66,6 @@ def _cli_parser():
                              'file. If no regressor names are provided, but '
                              'files are, all regressors in regressor files '
                              'are used.')
-    parser.add_argument('--realign_derivs',
-                        default=False, action='store_true',
-                        help='Whether to include temporal derivatives of '
-                             'realignment regressors. --t_r must be specified.')
     parser.add_argument('--as_voxels', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
@@ -210,13 +205,6 @@ def main():
 
     # run extraction
     make_timeseries(**params)
-
-    print('  Making reports...')
-    # generate figures and report
-    if params['as_voxels']:
-        make_figures(params, as_carpet=True, connectivity_metrics=False)
-    else:
-        make_figures(params)
 
 
 if __name__ == '__main__':

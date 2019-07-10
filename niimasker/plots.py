@@ -9,10 +9,9 @@ import matplotlib.pyplot as plt
 from nilearn.plotting import plot_roi, plot_matrix
 from nilearn.image import mean_img
 from nilearn.connectome import ConnectivityMeasure
-from niimasker.report import make_report
 
 
-def plot_timeseries(data, cmap):
+def _plot_roi_timeseries(data, cmap):
     """Plot timeseries traces for each extracted ROI.
 
     Parameters
@@ -31,6 +30,13 @@ def plot_timeseries(data, cmap):
                              figsize=(15, int(n_rois / 5)))
 
     cmap_vals = np.linspace(0, 1, num=n_rois)
+
+    if ((any([x.startswith('roi') for x in data.columns])) |
+           (any([x.startswith('voxel') for x in data.columns]))):
+           pass
+    else:
+        data.columns = ['{}. '.format(y) + x
+                        for y, x in enumerate(data.columns)]
 
     for i in np.arange(n_rois):
 
@@ -52,7 +58,7 @@ def plot_timeseries(data, cmap):
     return fig
 
 
-def plot_carpet(data):
+def _plot_carpet(data):
 
     plot_data = data.transpose().values
     vlim = np.max(np.abs(plot_data))
@@ -77,7 +83,20 @@ def plot_carpet(data):
     return fig
 
 
-def plot_mask(mask_img, func_img, cmap):
+def plot_timeseries(data, voxelwise, fname, cmap):
+
+    if voxelwise:
+        fig = _plot_carpet(data)
+    else:
+        fig = _plot_roi_timeseries(data, cmap)
+
+    fname += '_timeseries_plot.png'
+    fig.savefig(fname, bbox_inches='tight')
+    plt.close()
+    return os.path.abspath(fname)
+
+
+def plot_overlay(mask_img, func_img, fname, cmap):
     """Overlay mask/atlas on mean functional image.
 
     Parameters
@@ -112,13 +131,17 @@ def plot_mask(mask_img, func_img, cmap):
                  alpha=.66, cut_coords=np.linspace(-90, 60, num=n_cuts),
                  cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
-    return fig
+
+    fname += '_mask_overlay.png'
+    fig.savefig(fname, bbox_inches='tight')
+    plt.close()
+    return os.path.abspath(fname)
 
 
-def plot_connectome(data, tick_cmap, labels=None):
+def plot_connectome(data, fname, tick_cmap):
 
     cm = ConnectivityMeasure(kind='correlation')
-    mat = cm.fit_transform([data])[0]
+    mat = cm.fit_transform([data.values])[0]
 
     if data.shape[1] < 200:
         labels = ['{} '.format(x) + u"\u25A0" for x in np.arange(data.shape[1])]
@@ -127,10 +150,11 @@ def plot_connectome(data, tick_cmap, labels=None):
         labels = [u"\u25A0"] * data.shape[1]
 
     fig, ax = plt.subplots(figsize=(15, 15))
-    plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1,
-                cmap='coolwarm')
+    im = plot_matrix(mat, labels=labels, tri='lower', figure=fig, vmin=-1, vmax=1,
+                     cmap='coolwarm', colorbar=False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.figure.colorbar(im, ax=ax, fraction=0.03)
 
     cmap_vals = np.linspace(0, 1, num=len(labels))
     for i, lab in enumerate(labels):
@@ -140,10 +164,14 @@ def plot_connectome(data, tick_cmap, labels=None):
                        fontdict={'verticalalignment': 'top', 'horizontalalignment': 'center'})
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0,
                        fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
-    return fig
+
+    fname += '_connectome.png'
+    fig.savefig(fname, bbox_inches='tight')
+    plt.close()
+    return os.path.abspath(fname)
 
 
-def plot_regressor_correlations(data, regressors, cmap):
+def plot_regressor_corr(data, regressors, fname, cmap):
 
     # regressor by roi matrix
     result = np.zeros((regressors.shape[1], data.shape[1]))
@@ -173,86 +201,7 @@ def plot_regressor_correlations(data, regressors, cmap):
     ax.set_yticks(np.arange(regressors.shape[1]))
     ax.set_yticklabels(regressors.columns, rotation=0,
                        fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
-    return fig
-
-
-def make_figures(parameters, as_carpet=False, connectivity_metrics=True):
-
-    functional_images = parameters['input_files']
-    timeseries_dir = parameters['output_dir']
-    mask_img = parameters['mask_img']
-
-    figure_dir = os.path.join(timeseries_dir, 'niimasker_data/figures/')
-    os.makedirs(figure_dir, exist_ok=True)
-    report_dir = os.path.join(timeseries_dir, 'reports')
-    os.makedirs(report_dir, exist_ok=True)
-
-    for i, func in enumerate(functional_images):
-
-        func_img_name = os.path.basename(func).split('.')[0]
-        timeseries_file = os.path.join(timeseries_dir,
-                                       '{}_timeseries.tsv'.format(func_img_name))
-        timeseries_data = pd.read_csv(timeseries_file, sep=r'\t', engine='python')
-
-        if ((any([x.startswith('roi') for x in timeseries_data.columns])) |
-           (any([x.startswith('voxel') for x in timeseries_data.columns]))):
-           pass
-        else:
-            timeseries_data.columns = ['{}. '.format(y) + x
-                                 for y, x in enumerate(timeseries_data.columns)]
-
-        n_rois = timeseries_data.shape[1]
-        if (n_rois == 1) | as_carpet:
-            roi_cmap = matplotlib.cm.get_cmap('gist_yarg')
-        else:
-            roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
-
-        # plot and save timeseries
-        if as_carpet:
-            fig = plot_carpet(timeseries_data)
-            bbox_inches = 'tight'
-        else:
-            fig = plot_timeseries(timeseries_data, roi_cmap)
-            bbox_inches = None
-        timeseries_fig = os.path.join(figure_dir,
-                                      '{}_timeseries_plot.png'.format(func_img_name))
-        fig.savefig(timeseries_fig, bbox_inches=bbox_inches)
-        # plot and save mask overlay
-        fig = plot_mask(mask_img, func, roi_cmap)
-        overlay_fig = os.path.join(figure_dir,
-                                 '{}_atlas_plot.png'.format(func_img_name))
-        fig.savefig(overlay_fig, bbox_inches='tight')
-
-        # place-holder for connectivity plots
-        if connectivity_metrics:
-            fig = plot_connectome(timeseries_data.values, roi_cmap,
-                                  timeseries_data.columns)
-            connectome_fig = os.path.join(figure_dir, '{}_connectome_plot.png'.format(func_img_name))
-            fig.savefig(connectome_fig, bbox_inches='tight')
-
-            if parameters['regressor_files'] is not None:
-
-                all_regressors = pd.read_csv(parameters['regressor_files'][i],
-                                             sep=r'\t', engine='python')
-                regressors = all_regressors[parameters['regressor_names']]
-                if parameters['discard_scans'] is not None:
-                    n_scans = parameters['discard_scans']
-                    regressors = regressors.iloc[n_scans:, :]
-                else:
-                    regressors = regressors
-
-
-                fig = plot_regressor_correlations(timeseries_data,
-                                                  regressors, roi_cmap)
-                regressor_fig = os.path.join(figure_dir,
-                                         '{}_regressor_correlation_plot.png'.format(func_img_name))
-                fig.savefig(regressor_fig, bbox_inches='tight')
-            else:
-                regressor_fig = None
-        else:
-            connectome_fig = None
-            regressor_fig = None
-
-        # generate report
-        make_report(func, timeseries_dir, overlay_fig, timeseries_fig,
-                    connectome_fig, regressor_fig)
+    fname += '_regressors.png'
+    fig.savefig(fname, bbox_inches='tight')
+    plt.close()
+    return os.path.abspath(fname)
