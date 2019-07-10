@@ -36,7 +36,6 @@ class FunctionalImage(object):
 
 
     def discard_scans(self, n_scans):
-
         # crop scans from image
         arr = self.img.get_data()
         arr = arr[:, :, :, n_scans:]
@@ -74,37 +73,6 @@ class FunctionalImage(object):
         self.masker = masker
         self.data = pd.DataFrame(timeseries, columns=[str(i) for i in labels])
         self.voxelwise = as_voxels
-
-
-# def _discard_initial_scans(img, n_scans, regressors=None):
-#     """Remove first number of scans from functional image and regressors"""
-#     # crop scans from functional
-#     arr = img.get_data()
-#     arr = arr[:, :, :, n_scans:]
-#     out_img = nib.Nifti1Image(arr, img.affine)
-
-#     if regressors is not None:
-#         # crop from regressors
-#         out_reg = regressors[n_scans:, :]
-#     else:
-#         out_reg = None
-
-#     return out_img, out_reg
-
-
-# ## CONFOUND REGRESSOR FUNCTIONS
-
-# def _build_regressors(fname, regressor_names, realign_derivatives=False,
-#                       t_r=None):
-#     """Create regressors for masking"""
-#     all_regressors = pd.read_csv(fname, sep=r'\t', engine='python')
-#     regressors = all_regressors[regressor_names]
-#     if realign_derivatives:
-#         if t_r is not None:
-#             regressors = _compute_realign_derivs(regressors, t_r)
-#         else:
-#             raise ValueError('t_r not provided for realignment derivatives.')
-#     return regressors.values
 
 
 ## MASKING FUNCTIONS
@@ -148,7 +116,7 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
 
 
 def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
-                   regressor_names=None, t_r=None, as_voxels=False,
+                   regressor_names=None, as_voxels=False,
                    labels=None, discard_scans=None):
     """Runs the full masking process and saves output for a single image;
     the main function used by `make_timeseries`"""
@@ -177,7 +145,7 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
 
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
                     regressor_files=None, regressor_names=None,
-                    realign_derivs=False, as_voxels=False, discard_scans=None,
+                    as_voxels=False, discard_scans=None,
                     n_jobs=1, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s). This is the main function of this module.
@@ -200,11 +168,6 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     regressors : list of str, optional
         Regressor names to select from `regressor_files` headers. Default is
         None
-    realign_derivs : bool, optional
-        Whether to compute and include the temporal derivative of any head
-        motion realignment regressors produced from motion correction. This
-        will automatically compute the derivative only for columns with 'rot'
-        or 'trans' in them. Default is False.
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
@@ -232,8 +195,7 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     if n_jobs == 1:
         for i, img in enumerate(input_files):
             _mask_and_save(masker, img, output_dir, regressor_files[i],
-                           regressor_names, masker_kwargs['t_r'], as_voxels,
-                           labels, discard_scans)
+                           regressor_names, as_voxels, labels, discard_scans)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
@@ -242,8 +204,6 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
             repeat(output_dir),
             regressor_files, # iterate over, paired with input_files
             repeat(regressor_names),
-            repeat(realign_derivs),
-            repeat(masker_kwargs['t_r']),
             repeat(as_voxels),
             repeat(labels),
             repeat(discard_scans)
