@@ -11,47 +11,100 @@ import nibabel as nib
 from nilearn.image import load_img
 from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
 
-
-def _discard_initial_scans(img, n_scans, regressors=None):
-    """Remove first number of scans from functional image and regressors"""
-    # crop scans from functional
-    arr = img.get_data()
-    arr = arr[:, :, :, n_scans:]
-    out_img = nib.Nifti1Image(arr, img.affine)
-
-    if regressors is not None:
-        # crop from regressors
-        out_reg = regressors[n_scans:, :]
-    else:
-        out_reg = None
-
-    return out_img, out_reg
+from niimasker.report import generate_report
 
 
-## CONFOUND REGRESSOR FUNCTIONS
+class FunctionalImage(object):
+    def __init__(self, fname):
 
-def _compute_realign_derivs(regressors, t_r):
-    """Compute derivatives from motion realignment parameters"""
-    cols = [i for i in regressors.columns if ('rot' in i) | ('trans' in i)]
-    realign = regressors[cols].values
-    # compute central differences with sample distances = TR; (dx)
-    derivs = np.gradient(realign, t_r, axis=0)
-    deriv_cols = ['{}_d'.format(i) for i in cols]
-    return pd.concat([regressors, pd.DataFrame(derivs, columns=deriv_cols)],
-                     axis=1)
+        self.fname = fname
+        img = nib.load(self.fname)
+        self.img = img
 
+        self.regressors = None
+        self.regressor_file = None
 
-def _build_regressors(fname, regressor_names, realign_derivatives=False,
-                      t_r=None):
-    """Create regressors for masking"""
-    all_regressors = pd.read_csv(fname, sep=r'\t', engine='python')
-    regressors = all_regressors[regressor_names]
-    if realign_derivatives:
-        if t_r is not None:
-            regressors = _compute_realign_derivs(regressors, t_r)
+    def set_regressors(self, regressor_fname, regressor_labels=None):
+        """Create regressors for masking"""
+        self.regressor_file = regressor_fname
+        all_regressors = pd.read_csv(regressor_fname, sep=r'\t',
+                                     engine='python')
+        if regressor_labels is not None:
+            self.regressors = all_regressors[regressor_labels]
         else:
-            raise ValueError('t_r not provided for realignment derivatives.')
-    return regressors.values
+            self.regressors = all_regressors
+
+
+    def discard_scans(self, n_scans):
+
+        # crop scans from image
+        arr = self.img.get_data()
+        arr = arr[:, :, :, n_scans:]
+        self.img = nib.Nifti1Image(arr, self.img.affine)
+
+        if self.regressors is not None:
+            # crop from regressors
+            self.regressors = self.regressors.iloc[n_scans:, :]
+
+
+    def extract(self, masker, as_voxels=False, roi_labels=None):
+        print('  Extracting from {}'.format(os.path.basename(self.fname)))
+
+        timeseries = masker.fit_transform(self.img,
+                                          confounds=self.regressors.values)
+
+        if isinstance(masker, NiftiMasker):
+            # single ROI extracted
+            if as_voxels:
+                labels = ['voxel {}'.format(int(i))
+                            for i in np.arange(timeseries.shape[1])]
+            else:
+                timeseries = np.mean(timeseries, axis=1)
+                labels = ['roi'] if roi_labels is None else roi_labels
+
+            self.mask_img = masker.mask_img_
+        else:
+            # multiple regions from an atlas were extracted
+            if roi_labels is None:
+                labels = ['roi {}'.format(int(i)) for i in masker.labels_]
+            else:
+                labels = roi_labels
+            self.mask_img = masker.labels_img
+
+        self.masker = masker
+        self.data = pd.DataFrame(timeseries, columns=[str(i) for i in labels])
+        self.voxelwise = as_voxels
+
+
+# def _discard_initial_scans(img, n_scans, regressors=None):
+#     """Remove first number of scans from functional image and regressors"""
+#     # crop scans from functional
+#     arr = img.get_data()
+#     arr = arr[:, :, :, n_scans:]
+#     out_img = nib.Nifti1Image(arr, img.affine)
+
+#     if regressors is not None:
+#         # crop from regressors
+#         out_reg = regressors[n_scans:, :]
+#     else:
+#         out_reg = None
+
+#     return out_img, out_reg
+
+
+# ## CONFOUND REGRESSOR FUNCTIONS
+
+# def _build_regressors(fname, regressor_names, realign_derivatives=False,
+#                       t_r=None):
+#     """Create regressors for masking"""
+#     all_regressors = pd.read_csv(fname, sep=r'\t', engine='python')
+#     regressors = all_regressors[regressor_names]
+#     if realign_derivatives:
+#         if t_r is not None:
+#             regressors = _compute_realign_derivs(regressors, t_r)
+#         else:
+#             raise ValueError('t_r not provided for realignment derivatives.')
+#     return regressors.values
 
 
 ## MASKING FUNCTIONS
@@ -95,30 +148,31 @@ def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
 
 
 def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
-                   regressor_names=None, realign_derivs=False, t_r=None,
-                   as_voxels=False, labels=None, discard_scans=None):
+                   regressor_names=None, t_r=None, as_voxels=False,
+                   labels=None, discard_scans=None):
     """Runs the full masking process and saves output for a single image;
-    the main function used by `make_timeseries` `make_timeseries`"""
-    basename = os.path.basename(img_name)
-    print('  Extracting from {}'.format(basename))
-    img = nib.load(img_name)
+    the main function used by `make_timeseries`"""
+    # basename = os.path.basename(img_name)
+    # print('  Extracting from {}'.format(basename))
+    # img = nib.load(img_name)
+
+    img = FunctionalImage(img_name)
 
     if regressor_file is not None:
-        confounds = _build_regressors(regressor_file, regressor_names,
-                                        realign_derivs, t_r)
-    else:
-        confounds = None
+        img.set_regressors(regressor_file, regressor_names)
 
     if discard_scans is not None:
         if discard_scans > 0:
-            img, confounds = _discard_initial_scans(img, discard_scans,
-                                                    confounds)
+            img.discard_scans(discard_scans)
 
-    data = _mask(masker, img, confounds, labels, as_voxels)
+    img.extract(masker, as_voxels=as_voxels, roi_labels=labels)
 
-    out_fname = basename.split('.')[0] + '_timeseries.tsv'
-    data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
-                float_format='%.8f')
+    # export data and report
+    out_fname = os.path.basename(img.fname).split('.')[0] + '_timeseries.tsv'
+    img.data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
+                    float_format='%.8f')
+    generate_report(img, output_dir)
+
 
 
 def make_timeseries(input_files, mask_img, output_dir, labels=None,
@@ -178,8 +232,8 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     if n_jobs == 1:
         for i, img in enumerate(input_files):
             _mask_and_save(masker, img, output_dir, regressor_files[i],
-                           regressor_names, realign_derivs, masker_kwargs['t_r'],
-                           as_voxels, labels, discard_scans)
+                           regressor_names, masker_kwargs['t_r'], as_voxels,
+                           labels, discard_scans)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
