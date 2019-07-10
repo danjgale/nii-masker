@@ -1,4 +1,11 @@
 from setuptools import setup, find_packages
+import re
+import io
+
+__version__ = re.search(
+    r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+    io.open('niimasker/__init__.py', encoding='utf_8_sig').read()
+    ).group(1)
 
 test_deps = ['pytest-cov',
              'pytest']
@@ -9,7 +16,7 @@ extras = {
 
 setup(
     name='niimasker',
-    version='0.0.2',
+    version=__version__,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
     license='MIT',
