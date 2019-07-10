@@ -81,8 +81,6 @@ optional arguments:
                         correspond to headers in each file. If no regressor
                         names are provided, but files are, all regressors in
                         regressor files are used.
-  --realign_derivs      Whether to include temporal derivatives of realignment
-                        regressors. --t_r must be specified.
   --as_voxels           Whether to extract out the timeseries of each voxel
                         instead of the mean timeseries. This is only available
                         for single ROI binary masks. Default False.
