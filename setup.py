@@ -31,6 +31,7 @@ setup(
         'natsort',
         'scipy',
         'scikit-learn',
+        'matplotlib',
         'jinja2'
     ],
     tests_require=test_deps,
