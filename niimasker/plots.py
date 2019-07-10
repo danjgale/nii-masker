@@ -93,7 +93,9 @@ def plot_timeseries(data, voxelwise, fname, cmap):
     fname += '_timeseries_plot.png'
     fig.savefig(fname, bbox_inches='tight')
     plt.close()
-    return os.path.abspath(fname)
+    # just get figure directory + file for html
+    fig_path = os.path.basename(os.path.dirname(fname))
+    return os.path.join(fig_path, os.path.basename(fname))
 
 
 def plot_overlay(mask_img, func_img, fname, cmap):
@@ -135,7 +137,9 @@ def plot_overlay(mask_img, func_img, fname, cmap):
     fname += '_mask_overlay.png'
     fig.savefig(fname, bbox_inches='tight')
     plt.close()
-    return os.path.abspath(fname)
+    # just get figure directory + file for html
+    fig_path = os.path.basename(os.path.dirname(fname))
+    return os.path.join(fig_path, os.path.basename(fname))
 
 
 def plot_connectome(data, fname, tick_cmap):
@@ -168,7 +172,9 @@ def plot_connectome(data, fname, tick_cmap):
     fname += '_connectome.png'
     fig.savefig(fname, bbox_inches='tight')
     plt.close()
-    return os.path.abspath(fname)
+    # just get figure directory + file for html
+    fig_path = os.path.basename(os.path.dirname(fname))
+    return os.path.join(fig_path, os.path.basename(fname))
 
 
 def plot_regressor_corr(data, regressors, fname, cmap):
@@ -204,4 +210,6 @@ def plot_regressor_corr(data, regressors, fname, cmap):
     fname += '_regressors.png'
     fig.savefig(fname, bbox_inches='tight')
     plt.close()
-    return os.path.abspath(fname)
+    # just get figure directory + file for html
+    fig_path = os.path.basename(os.path.dirname(fname))
+    return os.path.join(fig_path, os.path.basename(fname))
