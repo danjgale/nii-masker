@@ -74,10 +74,15 @@ def get_labelled_atlas(query, data_dir=None, return_labels=True):
         labels = atlas['labels']
     elif atlas_name == 'schaefer':
         n_rois, networks, resolution = sub_param.split('-')
+        # corrected version of schaefer labels until fixed in nilearn
+        correct_url = ('https://raw.githubusercontent.com/ThomasYeoLab/CBIG/'
+                       'v0.14.3-Schaefer2018_LocalGlobal/stable_projects/brain'
+                       '_parcellation/Schaefer2018_LocalGlobal/Parcellations/MNI/')
         atlas = fetch_atlas_schaefer_2018(n_rois=int(n_rois),
                                           yeo_networks=int(networks),
                                           resolution_mm=int(resolution),
-                                          data_dir=data_dir)
+                                          data_dir=data_dir,
+                                          base_url=correct_url)
         img = atlas['maps']
         labels = atlas['labels']
     else:
