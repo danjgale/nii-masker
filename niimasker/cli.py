@@ -34,17 +34,20 @@ def _cli_parser():
                              'files are naturally sorted by file name prior to '
                              'extraction.')
     parser.add_argument('-m', '--mask_img', type=str, metavar='mask_img',
-                        help='File path of the atlas/ROI mask. Can either be a '
-                             'single ROI mask that is binary, or an atlas with '
-                             'numeric labels. Must be a sinlge NIfTI file in '
-                             'the same space as the input images.')
+                        help='File path of the atlas/ROI NIfTI mask or a '
+                             'nilearn query string formatted as `nilearn:'
+                             '<atlas-name>:<atlas-parameters> (see '
+                             'Documentation). Single ROI masks must be binary, '
+                             'and atlas images must be integer labeled.')
     parser.add_argument('--labels', nargs='+', type=str, metavar='labels',
                         help='Labels corresponding to the mask numbers in '
-                             '`mask`. They must be sorted in ascending order '
-                             'to correctly correspond to the atlas indices. The '
-                             'number of labels provided must match the number '
-                             'of non-zero indices in `mask`. If none are '
-                             'provided, numeric indices are used')
+                             '`mask`. Can either be a list of strings, or a '
+                             '.tsv file that contains a `Labels` column. Labels '
+                             'must be sorted in ascending order to correctly '
+                             'correspond to the atlas indices. The number of '
+                             'labels provided must match the number of non-zero '
+                             'indices in `mask`. If none are provided, numeric '
+                             'indices are used (default)')
     parser.add_argument('--regressor_files', nargs='+', type=str,
                         metavar='regressor_files',
                         help='One or more tabular files with regressors in each '
@@ -75,24 +78,22 @@ def _cli_parser():
     parser.add_argument('--standardize',
                         action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
-                        'Default False')
+                             'Default False')
     parser.add_argument('--t_r', type=int, metavar='t_r',
                         help='The TR of the input NIfTI files, specified in '
                              'seconds. Must be included if temporal filtering '
                              'or realignment derivatives are specified.')
     parser.add_argument('--high_pass', type=float, metavar='high_pass',
                         help='High pass filter cut off in Hertz. If it is not '
-                             'specified, no filtering is done.')
+                             'specified, no filtering is done. (default)')
     parser.add_argument('--low_pass', type=float, metavar='low_pass',
-                        help='Low pass filter cut off in Hertz. If it is not '
-                             'specified, no filtering is done.')
+                        help='Low pass filter cut off in Hertz.')
     parser.add_argument('--detrend', action='store_true',
                         default=False,
-                        help='Whether to detrend the data. Default False')
+                        help='Whether to temporally detrend the data.')
     parser.add_argument('--smoothing_fwhm', type=float, metavar='smoothing_fwhm',
                         help='Smoothing kernel FWHM (in mm) if spatial smoothing '
-                             'is desired. If not specified, no smoothing is '
-                             'performed.')
+                             'is desired.')
     parser.add_argument('--discard_scans', type=int, metavar='discard_scans',
                         help='Discard the first N scans of each functional '
                              'NIfTI image.')
@@ -134,8 +135,8 @@ def _check_params(params):
         params['regressor_files'] = _check_glob(params['regressor_files'])
 
     if isinstance(params['labels'], str):
-        if params['labels'].endswith('.csv'):
-            df = pd.read_csv(params['labels'])
+        if params['labels'].endswith('.tsv'):
+            df = pd.read_table(params['labels'])
             params['labels'] = df['Label'].tolist()
 
     if params['mask_img'].startswith('nilearn:'):

@@ -37,7 +37,7 @@ usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
                  [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
-                 [--realign_derivs] [--as_voxels] [--standardize] [--t_r t_r]
+                 [--as_voxels] [--standardize] [--t_r t_r]
                  [--high_pass high_pass] [--low_pass low_pass] [--detrend]
                  [--smoothing_fwhm smoothing_fwhm]
                  [--discard_scans discard_scans] [--n_jobs n_jobs] [-c config]
@@ -54,16 +54,19 @@ optional arguments:
                         matching the file pattern. If so, these files are
                         naturally sorted by file name prior to extraction.
   -m mask_img, --mask_img mask_img
-                        File path of the atlas/ROI mask. Can either be a
-                        single ROI mask that is binary, or an atlas with
-                        numeric labels. Must be a sinlge NIfTI file in the
-                        same space as the input images.
+                        File path of the atlas/ROI NIfTI mask or a nilearn
+                        query string formatted as `nilearn:<atlas-
+                        name>:<atlas-parameters> (see Documentation). Single
+                        ROI masks must be binary, and atlas images must be
+                        integer labeled.
   --labels labels [labels ...]
                         Labels corresponding to the mask numbers in `mask`.
-                        They must be sorted in ascending order to correctly
-                        correspond to the atlas indices. The number of labels
-                        provided must match the number of non-zero indices in
-                        `mask`. If none are provided, numeric indices are used
+                        Can either be a list of strings, or a .tsv file that
+                        contains a `Labels` column. Labels must be sorted in
+                        ascending order to correctly correspond to the atlas
+                        indices. The number of labels provided must match the
+                        number of non-zero indices in `mask`. If none are
+                        provided, numeric indices are used (default)
   --regressor_files regressor_files [regressor_files ...]
                         One or more tabular files with regressors in each
                         column. The number of files match the number of input
@@ -91,13 +94,12 @@ optional arguments:
                         derivatives are specified.
   --high_pass high_pass
                         High pass filter cut off in Hertz. If it is not
-                        specified, no filtering is done.
-  --low_pass low_pass   Low pass filter cut off in Hertz. If it is not
-                        specified, no filtering is done.
-  --detrend             Whether to detrend the data. Default False
+                        specified, no filtering is done. (default)
+  --low_pass low_pass   Low pass filter cut off in Hertz.
+  --detrend             Whether to temporally detrend the data.
   --smoothing_fwhm smoothing_fwhm
                         Smoothing kernel FWHM (in mm) if spatial smoothing is
-                        desired. If not specified, no smoothing is performed.
+                        desired.
   --discard_scans discard_scans
                         Discard the first N scans of each functional NIfTI
                         image.
