@@ -148,6 +148,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 
 ```JSON
 {
+  "input_files": [],
   "mask_img": "",
   "labels": [],
   "regressor_files": null,
@@ -198,7 +199,7 @@ This set up is convenient when your `output_dir` and `input_files` vary on a sub
 
 ## Working with single ROI masks
 
-`niimasker` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
+`niimasker` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` in the CLI or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
 
 ```JSON
 {
@@ -283,7 +284,52 @@ Command:
 
 `niimasker output/ -c config.json`
 
-Note that extracting voxelwise data from a multi-region atlas is not currently supported (as in `nilearn`). However, this approach is very efficient if you're extracting out the mean timeseries for many regions defined by an atlas.
+## Using atlases fetched by `nilearn`
+
+`niimasker` also gives you the option to specify an atlas that is fetched directly by `nilearn` (a full list of datasets/atlases that can be fetched by `nilearn` can be found [here](https://nilearn.github.io/modules/reference.html#module-nilearn.datasets)). The following atlases are available:
+
+| Atlas Name  | Parameter 1                                       | Parameter 2                       | Parameter 3 | `nilearn` function                                                                                                                                                                         |
+|-------------|---------------------------------------------------|-----------------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `aal`       | `SPM5`, `SPM8`, `SPM12`                           | n/a                               | n/a         | [`fetch_atlas_aal`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_aal.html#nilearn.datasets.fetch_atlas_aal)                                                    |
+| `basc`      | `sym`, `asym`                                     | 7, 12, 20, 36, 122, 197, 325, 444 | n/a         | [`fetch_atlas_basc_multiscale_2015`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_basc_multiscale_2015.html#nilearn.datasets.fetch_atlas_basc_multiscale_2015) |
+| `destrieux` | `lateralized`, `nonlateralized`                   | n/a                               | n/a         | [`fetch_atlas_destrieux_2009`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_destrieux_2009.html#nilearn.datasets.fetch_atlas_destrieux_2009)                   |
+| `schaefer`  | 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 | 7, 17                             | 1, 2        | [`fetch_atlas_schaefer_2018`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_schaefer_2018.html#nilearn.datasets.fetch_atlas_schaefer_2018)                      |
+| `talairach` | `hemisphere`, `lobe`, `gyrus`, `tissue`, `ba`     | n/a                               | n/a         | [`fetch_atlas_talairach`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_talairach.html#nilearn.datasets.fetch_atlas_talairach)                                  |
+| `yeo`       | `thin_7`, `thick_7`, `thin_17`, `thick_17`         | n/a                               | n/a        | [`fetch_atlas_yeo_2011`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_yeo_2011.html#nilearn.datasets.fetch_atlas_yeo_2011)                                     |
+
+To fetch an atlas, `niimasker` takes a query string for `mask_img` in the following format: `nilearn:<atlas name>:<atlas-parameters>`. For instance, the Yeo atlas can be fetch as so: `nilearn:yeo:thick_7`
+
+Subparameters in the `basc` and `schaefer` atlases are separated by hyphen. For instance, `nilearn:basc:sym-20` to fetch the Basc symmetrical 20-network atlas, and `nilearn:schaefer:400-17-2` to fetch the 400 region, 17-network atlas at 2mm spatial resolution.
+
+Using the above example, we can replace the NIfTI atlas file with the following:
+
+```JSON
+{
+  "input_files": ["img1.nii.gz", "img2.nii.gz"],
+  "mask_img": "nilearn:schaefer:400-17-2",
+  "labels": ["region1", "region2", "region2"],
+  "regressor_files": [
+    "confounds1.tsv",
+    "confounds2.tsv"
+  ],
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
+  "standardize": true,
+  "t_r": 2,
+  "high_pass": 0.01,
+  "detrend": true,
+  "discard_scans": 4,
+  "smoothing_fwhm": 6
+}
+```
 
 ## Working with fmriprep data
 
