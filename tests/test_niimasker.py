@@ -87,40 +87,8 @@ def test_set_masker(atlas_data):
     bin_img = nib.Nifti1Image(np.where(atlas_img.get_data() == 2001, 1., 0),
                               atlas_img.affine)
     masker = niimasker._set_masker(bin_img)
+    assert isinstance(masker, NiftiLabelsMasker)
+
+    # set as_voxels to true which should return a NiftiMasker object instead
+    masker = niimasker._set_masker(bin_img, as_voxels=True)
     assert isinstance(masker, NiftiMasker)
-
-
-def test_mask(atlas_data, regressors, post_processed_data):
-    """Test basic (completely raw) and post-processed masking. Ensure results
-    match equivalent versions created directly by nilearn"""
-
-    atlas = _get_atlas()
-    atlas_img = nib.load(atlas['maps'])
-
-    # test basic mask with no post-processing
-    test_masker = niimasker._set_masker(atlas_img)
-    result = niimasker._mask(test_masker, atlas_data)
-
-    expected_masker = NiftiLabelsMasker(atlas_img)
-    expected = expected_masker.fit_transform(atlas_data)
-
-    assert np.array_equal(result, expected)
-
-    # test mask with all post-processing options
-    test_masker = niimasker._set_masker(atlas_img, standardize=True,
-                                        smoothing_fwhm=5, detrend=True,
-                                        low_pass=.1, high_pass=.01, t_r=2)
-    result = niimasker._mask(test_masker, atlas_data, confounds=regressors.values)
-
-    assert np.array_equal(result, post_processed_data)
-
-
-
-
-
-
-
-
-
-
-
