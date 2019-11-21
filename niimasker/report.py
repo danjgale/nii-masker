@@ -22,24 +22,29 @@ def generate_report(func_image, output_dir):
     if func_image.voxelwise:
         roi_cmap = matplotlib.cm.get_cmap('gist_yarg')
     else:
-        roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
-
+        if func_image.data.shape[1] > 1:
+            roi_cmap = matplotlib.cm.get_cmap('nipy_spectral')
+        else:
+            # single ROI instance where it's easiest to change the colormap
+            # so that the ROI isn't black on the overlay
+            roi_cmap = matplotlib.cm.get_cmap('autumn')
 
     overlay_fig = plot_overlay(func_image.mask_img, func_image.img,
                                fig_fname_base, cmap=roi_cmap)
     ts_fig = plot_timeseries(func_image.data, func_image.voxelwise,
                              fig_fname_base, cmap=roi_cmap)
-    if not func_image.voxelwise:
+    connectome_fig = None
+    reg_corr_fig = None
+    
+    # multi region atlas figures
+    if (not func_image.voxelwise) & (n_rois > 1):
         connectome_fig = plot_connectome(func_image.data, fig_fname_base,
                                              tick_cmap=roi_cmap)
         if func_image.regressors is not None:
             reg_corr_fig = plot_regressor_corr(func_image.data,
                                                func_image.regressors,
                                                fig_fname_base, cmap=roi_cmap)
-    else:
-        connectome_fig = None
-        reg_corr_fig = None
-
+        
     param_file = os.path.join(output_dir, 'niimasker_data/parameters.json')
     with open(param_file, 'r') as f:
         parameters = json.load(f)

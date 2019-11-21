@@ -49,25 +49,25 @@ class FunctionalImage(object):
     def extract(self, masker, as_voxels=False, roi_labels=None):
         print('  Extracting from {}'.format(os.path.basename(self.fname)))
 
-        timeseries = masker.fit_transform(self.img,
-                                          confounds=self.regressors.values)
+        if self.regressors is None:
+            timeseries = masker.fit_transform(self.img)
+        else:
+            timeseries = masker.fit_transform(self.img,
+                                              confounds=self.regressors.values)
 
+        # determine column names for timeseries
         if isinstance(masker, NiftiMasker):
-            # single ROI extracted
-            if as_voxels:
-                labels = ['voxel {}'.format(int(i))
-                            for i in np.arange(timeseries.shape[1])]
-            else:
-                timeseries = np.mean(timeseries, axis=1)
-                labels = ['roi'] if roi_labels is None else roi_labels
-
+            labels = ['voxel {}'.format(int(i))
+                      for i in np.arange(timeseries.shape[1])]
             self.mask_img = masker.mask_img_
+        
         else:
             # multiple regions from an atlas were extracted
             if roi_labels is None:
                 labels = ['roi {}'.format(int(i)) for i in masker.labels_]
             else:
                 labels = roi_labels
+
             self.mask_img = masker.labels_img
 
         self.masker = masker
@@ -77,42 +77,31 @@ class FunctionalImage(object):
 
 ## MASKING FUNCTIONS
 
-def _set_masker(mask_img, **kwargs):
+def _set_masker(mask_img, as_voxels=False, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
     n_rois = np.unique(mask_img.get_data())
     print('  {} region(s) detected from {}'.format(len(n_rois) - 1,
                                                    mask_img.get_filename()))
 
     if len(n_rois) > 2:
-        masker = NiftiLabelsMasker(mask_img, **kwargs)
+        
+        if as_voxels:
+            raise ValueError('`as_voxels` must be set to False (Default) if '
+                             'using an mask image with > 1 region. ')
+        else:
+            # mean timeseries extracted from regions
+            masker = NiftiLabelsMasker(mask_img, **kwargs)
     elif len(n_rois) == 2:
-        masker = NiftiMasker(mask_img, **kwargs)
+        # single binary ROI mask 
+        if as_voxels:
+            masker = NiftiMasker(mask_img, **kwargs)
+        else:
+            # more computationally efficient if only wanting the mean of ROI
+            masker = NiftiLabelsMasker(mask_img, **kwargs)
     else:
         # only 1 value found
         raise ValueError('No ROI detected; check ROI file')
     return masker
-
-
-def _mask(masker, img, confounds=None, roi_labels=None, as_voxels=False):
-    """Extract timeseries from an image and apply post-processing"""
-    timeseries = masker.fit_transform(img, confounds=confounds)
-
-    if isinstance(masker, NiftiMasker):
-        # single ROI extracted
-        if as_voxels:
-            labels = ['voxel {}'.format(int(i))
-                      for i in np.arange(timeseries.shape[1])]
-        else:
-            timeseries = np.mean(timeseries, axis=1)
-            labels = ['roi'] if roi_labels is None else roi_labels
-    else:
-        # multiple regions from an atlas were extracted
-        if roi_labels is None:
-            labels = ['roi {}'.format(int(i)) for i in masker.labels_]
-        else:
-            labels = roi_labels
-
-    return pd.DataFrame(timeseries, columns=[str(i) for i in labels])
 
 
 def _mask_and_save(masker, img_name, output_dir, regressor_file=None,

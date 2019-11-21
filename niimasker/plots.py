@@ -26,8 +26,16 @@ def _plot_roi_timeseries(data, cmap):
         Timeseries plot
     """
     n_rois = data.shape[1]
+
+    # scale figure height based on number of ROIs. If this is less than 5, set
+    # height as 1 (cannot have non-integer values for fig size)
+    if n_rois < 5:
+        height = 1
+    else:
+        height = int(n_rois / 5)
+
     fig, axes = plt.subplots(n_rois, 1, sharex=True,
-                             figsize=(15, int(n_rois / 5)))
+                             figsize=(15, height))
 
     cmap_vals = np.linspace(0, 1, num=n_rois)
 
@@ -40,7 +48,12 @@ def _plot_roi_timeseries(data, cmap):
 
     for i in np.arange(n_rois):
 
-        ax = axes[i]
+        try:
+            ax = axes[i]
+        except TypeError:
+            # in the case where axes is not in an array (n_rois == 1)
+            ax = axes
+
         y = data.iloc[:, i]
         x = y.index.values
 
@@ -54,7 +67,8 @@ def _plot_roi_timeseries(data, cmap):
         ax.tick_params(left=False, labelleft=False)
         ax.xaxis.set_visible(False)
 
-    fig.tight_layout()
+    if n_rois != 1:
+        fig.tight_layout()
     return fig
 
 
@@ -92,6 +106,7 @@ def plot_timeseries(data, voxelwise, fname, cmap):
 
     fname += '_timeseries_plot.png'
     fig.savefig(fname, bbox_inches='tight')
+
     plt.close()
     # just get figure directory + file for html
     fig_path = os.path.basename(os.path.dirname(fname))

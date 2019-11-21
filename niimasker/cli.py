@@ -116,17 +116,30 @@ def _check_glob(x):
         raise ValueError('Input data files (NIfTIs and confounds) must be a'
                          'string or list of string')
 
+def _empty_to_None(x):
+    """Replace an empty list from params with None"""
+    if isinstance(x, list):
+        if not x:
+            x = None
+    return x
+
+
 
 def _check_params(params):
     """Ensure that required fields are included and correctly formatted"""
+
+    # convert empty list parameters to None 
+    params['labels'] = _empty_to_None(params['labels'])
+    params['regressor_names'] = _empty_to_None(params['regressor_names'])
+    params['regressor_files'] = _empty_to_None(params['regressor_files'])
 
     if params['input_files'] is None:
         raise ValueError('Missing input files. Check files')
     else:
         params['input_files'] = _check_glob(params['input_files'])
-
-    if not params['input_files']:
-        raise ValueError('Missing input files. Check files')
+        # glob returned nothing
+        if not params['input_files']:
+            raise ValueError('Missing input files. Check files')
 
     if not params['mask_img']:
         raise ValueError('Missing mask file.')
@@ -138,6 +151,8 @@ def _check_params(params):
         if params['labels'].endswith('.tsv'):
             df = pd.read_table(params['labels'])
             params['labels'] = df['Label'].tolist()
+        else:
+            raise ValueError('Labels must be a filename or a list of strings.')
 
     if params['mask_img'].startswith('nilearn:'):
         cache = os.path.join(params['output_dir'], 'niimasker_data')
@@ -156,8 +171,6 @@ def _merge_params(cli, config):
 
     # update CLI params with configuration; overwrites
     params = dict(list(cli.items()) + list(config.items()))
-
-    params.pop('config')
     return params
 
 
@@ -170,8 +183,8 @@ def main():
         with open(params['config'], 'rb') as f:
             conf_params = json.load(f)
         params = _merge_params(params, conf_params)
-    else:
-        params.pop('config')
+
+    params.pop('config')
 
     # finalize parameters
     os.makedirs(params['output_dir'], exist_ok=True)
