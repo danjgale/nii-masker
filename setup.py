@@ -19,6 +19,7 @@ setup(
     version=__version__,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*",
                                     "tests"]),
+    package_data={'niimasker': ['templates/*.html']},
     license='MIT',
     author='Dan Gale',
     long_description=open('README.md').read(),
