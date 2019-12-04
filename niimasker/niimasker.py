@@ -173,7 +173,8 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
     mask_img = load_img(mask_img)
-    masker = _set_masker(mask_img, **masker_kwargs)
+    masker = _set_masker(mask_img, as_voxels, **masker_kwargs)
+    print(masker)
 
     # set as list of NoneType if no regressor files; makes it easy for
     # iterations
