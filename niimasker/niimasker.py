@@ -3,13 +3,16 @@ series data.
 """
 
 import os
+import warnings
 from itertools import repeat
 import multiprocessing
 import numpy as np
 import pandas as pd
 import nibabel as nib
-from nilearn.image import load_img
-from nilearn.input_data import NiftiMasker, NiftiLabelsMasker
+from nilearn.image import load_img, math_img, resample_to_img
+from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker, 
+                                NiftiSpheresMasker)
+from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
 
 from niimasker.report import generate_report
 
@@ -46,7 +49,7 @@ class FunctionalImage(object):
             self.regressors = self.regressors.iloc[n_scans:, :]
 
 
-    def extract(self, masker, as_voxels=False, roi_labels=None):
+    def extract(self, masker, as_voxels=False, labels=None):
         print('  Extracting from {}'.format(os.path.basename(self.fname)))
 
         if self.regressors is None:
@@ -59,70 +62,139 @@ class FunctionalImage(object):
         if isinstance(masker, NiftiMasker):
             labels = ['voxel {}'.format(int(i))
                       for i in np.arange(timeseries.shape[1])]
-            self.mask_img = masker.mask_img_
-        
-        else:
-            # multiple regions from an atlas were extracted
-            if roi_labels is None:
+            self.roi_img = masker.mask_img_
+            self.masker_type = 'NiftiMasker'
+            
+        elif isinstance(masker, NiftiLabelsMasker):
+            if labels is None:
                 labels = ['roi {}'.format(int(i)) for i in masker.labels_]
-            else:
-                labels = roi_labels
+            self.roi_img = masker.labels_img
+            self.masker_type = 'NiftiLabelsMasker'
 
-            self.mask_img = masker.labels_img
+        elif isinstance(masker, NiftiSpheresMasker):
+            if labels is None:
+                labels = ['roi {}'.format(int(i)) for i in range(len(masker.seeds))]
+            self.roi_img = masker.spheres_img
+            self.masker_type = 'NiftiSpheresMasker'
 
         self.masker = masker
         self.data = pd.DataFrame(timeseries, columns=[str(i) for i in labels])
-        self.voxelwise = as_voxels
 
 
 ## MASKING FUNCTIONS
 
-def _set_masker(mask_img, as_voxels=False, **kwargs):
+
+def _get_spheres_from_masker(masker, img):
+    """Re-extract spheres from coordinates to make niimg. 
+
+    Note that this will take a while, as it uses the exact same function that
+    nilearn calls to extract data for NiftiSpheresMasker
+    """
+
+    ref_img = nib.load(img) 
+    ref_img = nib.Nifti1Image(ref_img.get_fdata()[:, :, :, [0]], ref_img.affine)
+
+    X, A = _apply_mask_and_get_affinity(masker.seeds, ref_img, masker.radius, 
+                                        masker.allow_overlap)
+    # label sphere masks
+    spheres = A.toarray()
+    spheres *= np.arange(1, len(masker.seeds) + 1)[:, np.newaxis]
+
+    # combine masks, taking the maximum if overlap occurs
+    arr = np.zeros(spheres.shape[1])
+    for i in np.arange(spheres.shape[0]):
+        arr = np.maximum(arr, spheres[i, :])
+    arr = arr.reshape(ref_img.shape[:-1])
+    spheres_img = nib.Nifti1Image(arr, ref_img.affine)
+    
+    if masker.mask_img is not None:
+        mask_img_ = resample_to_img(masker.mask_img, spheres_img)
+        spheres_img = math_img('img1 * img2', img1=spheres_img, 
+                               img2=mask_img_)
+
+    return spheres_img
+
+
+def _read_coords(roi_file):
+    """Parse and validate coordinates from file"""
+
+    if not roi_file.endswith('.tsv'):
+        raise ValueError('Coordinate file must be a tab-separated .tsv file')
+
+    coords = pd.read_table(roi_file)
+    
+    # validate columns
+    columns = [x for x in coords.columns if x in ['x', 'y', 'z']]
+    if (len(columns) != 3) or (len(np.unique(columns)) != 3):
+        raise ValueError('Provided coordinates do not have 3 columns with '
+                         'names `x`, `y`, and `z`')
+
+    # convert to list of lists for nilearn input
+    return coords.values.tolist()
+
+
+def _set_masker(roi_file, as_voxels=False, **kwargs):
     """Check and see if multiple ROIs exist in atlas file"""
-    n_rois = np.unique(mask_img.get_data())
-    print('  {} region(s) detected from {}'.format(len(n_rois) - 1,
-                                                   mask_img.get_filename()))
 
-    if len(n_rois) > 2:
-        
-        if as_voxels:
-            raise ValueError('`as_voxels` must be set to False (Default) if '
-                             'using an mask image with > 1 region. ')
-        else:
-            # mean timeseries extracted from regions
-            masker = NiftiLabelsMasker(mask_img, **kwargs)
-    elif len(n_rois) == 2:
-        # single binary ROI mask 
-        if as_voxels:
-            masker = NiftiMasker(mask_img, **kwargs)
-        else:
-            # more computationally efficient if only wanting the mean of ROI
-            masker = NiftiLabelsMasker(mask_img, **kwargs)
+    if isinstance(roi_file, str) and roi_file.endswith('.tsv'):
+        roi = _read_coords(roi_file)
+        n_rois = len(roi)
+        is_coords = True
+        print('  {} region(s) detected from coordinates'.format(n_rois))
     else:
-        # only 1 value found
-        raise ValueError('No ROI detected; check ROI file')
+        roi = load_img(roi_file)
+        n_rois = len(np.unique(roi.get_data())) - 1
+
+        is_coords = False
+        print('  {} region(s) detected from {}'.format(n_rois,
+                                                       roi.get_filename()))
+    
+    if is_coords:
+        if kwargs.get('radius') is None:
+            warnings.warn('No radius specified for coordinates; setting '
+                            'to nilearn.input_data.NiftiSphereMasker default '
+                            'of extracting from a single voxel')
+        masker = NiftiSpheresMasker(roi, **kwargs)
+    else:
+
+        if 'radius' in kwargs:
+            kwargs.pop('radius')
+        
+        if 'allow_overlap' in kwargs:
+            kwargs.pop('allow_overlap')
+        
+        if n_rois > 1:
+            masker = NiftiLabelsMasker(roi, **kwargs)
+        elif n_rois == 1:
+            # single binary ROI mask 
+            if as_voxels:
+                if 'mask_img' in kwargs:
+                    kwargs.pop('mask_img')
+                masker = NiftiMasker(roi, **kwargs)
+            else:
+                # more computationally efficient if only wanting the mean of ROI
+                masker = NiftiLabelsMasker(roi, **kwargs)
+        else:
+            raise ValueError('No ROI detected; check ROI file')
+    
     return masker
-
-
+                
+    
 def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
                    regressor_names=None, as_voxels=False,
                    labels=None, discard_scans=None):
     """Runs the full masking process and saves output for a single image;
-    the main function used by `make_timeseries`"""
-    # basename = os.path.basename(img_name)
-    # print('  Extracting from {}'.format(basename))
-    # img = nib.load(img_name)
-
+    the main function used by `make_timeseries`
+    """
     img = FunctionalImage(img_name)
 
     if regressor_file is not None:
         img.set_regressors(regressor_file, regressor_names)
-
     if discard_scans is not None:
         if discard_scans > 0:
             img.discard_scans(discard_scans)
 
-    img.extract(masker, as_voxels=as_voxels, roi_labels=labels)
+    img.extract(masker, as_voxels=as_voxels, labels=labels)
 
     # export data and report
     out_fname = os.path.basename(img.fname).split('.')[0] + '_timeseries.tsv'
@@ -131,8 +203,7 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
     generate_report(img, output_dir)
 
 
-
-def make_timeseries(input_files, mask_img, output_dir, labels=None,
+def make_timeseries(input_files, roi_file, output_dir, labels=None,
                     regressor_files=None, regressor_names=None,
                     as_voxels=False, discard_scans=None,
                     n_jobs=1, **masker_kwargs):
@@ -172,9 +243,13 @@ def make_timeseries(input_files, mask_img, output_dir, labels=None,
     **masker_kwargs
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
-    mask_img = load_img(mask_img)
-    masker = _set_masker(mask_img, as_voxels, **masker_kwargs)
-    print(masker)
+    masker = _set_masker(roi_file, as_voxels, **masker_kwargs)
+
+    # create and save spheres image if coordinates are provided
+    if isinstance(masker, NiftiSpheresMasker):
+        masker.spheres_img = _get_spheres_from_masker(masker, input_files[0])
+        masker.spheres_img.to_filename(os.path.join(output_dir, 'niimasker_data',
+                                                    'spheres_image.nii.gz'))
 
     # set as list of NoneType if no regressor files; makes it easy for
     # iterations

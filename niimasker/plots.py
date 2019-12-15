@@ -6,7 +6,7 @@ from scipy.stats import pearsonr
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from nilearn.plotting import plot_roi, plot_matrix
+from nilearn.plotting import plot_roi, plot_matrix, plot_anat
 from nilearn.image import mean_img
 from nilearn.connectome import ConnectivityMeasure
 
@@ -72,7 +72,7 @@ def _plot_roi_timeseries(data, cmap):
     return fig
 
 
-def _plot_carpet(data):
+def _plot_carpet(data, ylabel, label_cmap=None):
 
     plot_data = data.transpose().values
     vlim = np.max(np.abs(plot_data))
@@ -84,23 +84,34 @@ def _plot_carpet(data):
     y_err = np.std(plot_data, axis=0)
     axes[0].plot(x, y, c='k')
     axes[0].fill_between(x, y - y_err, y + y_err, facecolor='gray', alpha=.4)
-    axes[0].set_ylabel('Mean BOLD\n (±1 SD)')
+    axes[0].set_ylabel('Mean Signal\n (±1 SD)')
 
     # carpet plot
     im = axes[1].imshow(plot_data, cmap='coolwarm', aspect='auto', vmin=-vlim,
-                   vmax=vlim)
+                        vmax=vlim)
     cbar = axes[1].figure.colorbar(im, ax=axes[1], orientation='horizontal',
                                    fraction=.05)
-    axes[1].set_ylabel('Voxelwise BOLD')
-    axes[1].set_xlabel('Volumes')
+    axes[1].set(xlabel='Volumes', ylabel=ylabel)
+
+    if (label_cmap is not None) and (ylabel == 'Region'):
+        labels = [u"\u25A0"] * plot_data.shape[0]
+        cmap_vals = np.linspace(0, 1, num=len(labels))
+        axes[1].set_yticks(range(len(labels)))
+        axes[1].set_yticklabels(labels)
+        for i, lab in enumerate(labels):
+            axes[1].get_yticklabels()[i].set_color(label_cmap(cmap_vals[i]))
+    
+    axes[1].tick_params(top=False, bottom=False, left=False, right=False, 
+                        labelleft=True)
+
     fig.tight_layout()
     return fig
 
 
-def plot_timeseries(data, voxelwise, fname, cmap):
+def plot_timeseries(data, fname, cmap=None, ylabel=None):
 
-    if voxelwise:
-        fig = _plot_carpet(data)
+    if data.shape[1] > 10:
+        fig = _plot_carpet(data, ylabel, cmap)
     else:
         fig = _plot_roi_timeseries(data, cmap)
 
@@ -113,12 +124,12 @@ def plot_timeseries(data, voxelwise, fname, cmap):
     return os.path.join(fig_path, os.path.basename(fname))
 
 
-def plot_overlay(mask_img, func_img, fname, cmap):
+def plot_region_overlay(roi_img, func_img, fname, cmap):
     """Overlay mask/atlas on mean functional image.
 
     Parameters
     ----------
-    atlas_img : str
+    roi_img : str
         File name of atlas/mask image
     func_img : str
         File name of 4D functional image that was used in extraction.
@@ -136,15 +147,15 @@ def plot_overlay(mask_img, func_img, fname, cmap):
     n_cuts = 7
     fig, axes = plt.subplots(3, 1, figsize=(15, 6))
 
-    g = plot_roi(mask_img, bg_img=bg_img, display_mode='z', axes=axes[0],
+    g = plot_roi(roi_img, bg_img=bg_img, display_mode='z', axes=axes[0],
                  alpha=.66, cut_coords=np.linspace(-50, 60, num=n_cuts),
                  cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
-    g = plot_roi(mask_img,  bg_img=bg_img, display_mode='x', axes=axes[1],
+    g = plot_roi(roi_img,  bg_img=bg_img, display_mode='x', axes=axes[1],
                  alpha=.66, cut_coords=np.linspace(-60, 60, num=n_cuts),
                  cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
-    g = plot_roi(mask_img, bg_img=bg_img, display_mode='y', axes=axes[2],
+    g = plot_roi(roi_img, bg_img=bg_img, display_mode='y', axes=axes[2],
                  alpha=.66, cut_coords=np.linspace(-90, 60, num=n_cuts),
                  cmap=cmap, black_bg=True, annotate=False)
     g.annotate(size=8)
@@ -156,6 +167,38 @@ def plot_overlay(mask_img, func_img, fname, cmap):
     fig_path = os.path.basename(os.path.dirname(fname))
     return os.path.join(fig_path, os.path.basename(fname))
 
+
+def plot_coord_overlay(roi_img, func_img, fname):
+
+    bg_img = mean_img(func_img)
+
+    fig, axes = plt.subplots(3, 1, figsize=(15, 6))
+    n_cuts = 7
+    
+    z_view = plot_anat(bg_img, display_mode='z', axes=axes[0],
+                       alpha=.66, cut_coords=np.linspace(-50, 60, num=n_cuts),
+                       black_bg=True, annotate=False)
+    z_view.add_contours(roi_img, levels=[0.5], colors='r')
+    z_view.annotate(size=8)
+    
+    x_view = plot_anat(bg_img, display_mode='x', axes=axes[1],
+                       alpha=.66, cut_coords=np.linspace(-50, 60, num=n_cuts),
+                       black_bg=True, annotate=False)
+    x_view.add_contours(roi_img, levels=[0.5], colors='r')
+    x_view.annotate(size=8)
+    
+    y_view = plot_anat(bg_img, display_mode='y', axes=axes[2],
+                       alpha=.66, cut_coords=np.linspace(-50, 60, num=n_cuts),
+                       black_bg=True, annotate=False)
+    y_view.add_contours(roi_img, levels=[0.5], colors='r')
+    y_view.annotate(size=8)
+
+    fname += '_mask_overlay.png'
+    fig.savefig(fname, bbox_inches='tight')
+    plt.close()
+    # just get figure directory + file for html
+    fig_path = os.path.basename(os.path.dirname(fname))
+    return os.path.join(fig_path, os.path.basename(fname))
 
 def plot_connectome(data, fname, tick_cmap):
 
