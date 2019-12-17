@@ -371,7 +371,7 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
 | 50  | -20 | -42 |
 | -38 | -27 | 69  |
 
-`niimasker` will place a sphere centered around each coordinate, and extract the mean signal of each sphere. The radius of the spheres (in mm) is set using `radius` (`--radius`). By default, `niimasker` will raise an error if any of the spheres are overlapping, but you can allow the spheres to overlap by setting `allow_overlap: true` (or using `--allow_overlap`). An example configuration file is shown below: 
+`niimasker` will place a sphere centered around each coordinate, and extract the mean signal of each sphere. The radius of the spheres (in mm) is set using `radius` (`--radius`). If no radius is set, then only the signal from the coordinate voxel is extracted. By default, `niimasker` will raise an error if any of the spheres are overlapping, but you can allow the spheres to overlap by setting `allow_overlap: true` (or using `--allow_overlap`). An example configuration file is shown below: 
 
 ```JSON
 {
