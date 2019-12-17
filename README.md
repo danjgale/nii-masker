@@ -33,12 +33,13 @@ First, download this repository to a directory. Then, navigate to the directory,
 `niimasker` is run via the command-line and can take the following arguments:
 
 ```
-usage: niimasker [-h] [-i input_files [input_files ...]] [-m mask_img]
-                 [--labels labels [labels ...]]
+usage: niimasker [-h] [-i input_files [input_files ...]] [-r roi_file]
+                 [-m mask_img] [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
-                 [--as_voxels] [--standardize] [--t_r t_r]
-                 [--high_pass high_pass] [--low_pass low_pass] [--detrend]
+                 [--as_voxels] [--radius radius] [--allow_overlap]
+                 [--standardize] [--t_r t_r] [--high_pass high_pass]
+                 [--low_pass low_pass] [--detrend]
                  [--smoothing_fwhm smoothing_fwhm]
                  [--discard_scans discard_scans] [--n_jobs n_jobs] [-c config]
                  output_dir
@@ -53,12 +54,23 @@ optional arguments:
                         string with a wildcard (*) to specify all files
                         matching the file pattern. If so, these files are
                         naturally sorted by file name prior to extraction.
+  -r roi_file, --roi_file roi_file
+                        Parameter that defines the region(s) of interest. This
+                        can be 1) a file path to NIfTI image that is an atlas
+                        of multiple regions or a binary mask of one region, 2)
+                        a nilearn query string formatted as `nilearn:<atlas-
+                        name>:<atlas-parameters> (see online documentation),
+                        or 3) a file path to a .tsv file that has x, y, z
+                        columns that contain roi_file coordinates in MNI
+                        space. Refer to online documentation for more on how
+                        these options map onto the underlying nilearn masker
+                        classes.
   -m mask_img, --mask_img mask_img
-                        File path of the atlas/ROI NIfTI mask or a nilearn
-                        query string formatted as `nilearn:<atlas-
-                        name>:<atlas-parameters> (see Documentation). Single
-                        ROI masks must be binary, and atlas images must be
-                        integer labeled.
+                        File path of a NIfTI mask image a to be used when
+                        `roi_file` is a) an multi-region atlas or a b) list of
+                        coordinates. This will restrict extraction to only
+                        voxels within the mask. If `roi_file` is a single-
+                        region binary mask, this will be ignored.
   --labels labels [labels ...]
                         Labels corresponding to the mask numbers in `mask`.
                         Can either be a list of strings, or a .tsv file that
@@ -87,6 +99,14 @@ optional arguments:
   --as_voxels           Whether to extract out the timeseries of each voxel
                         instead of the mean timeseries. This is only available
                         for single ROI binary masks. Default False.
+  --radius radius       Set the radius of the spheres (in mm) centered on the
+                        coordinates provided in `roi_file`. Only applicable
+                        when a coordinate .tsv file is passed to `roi_file`;
+                        otherwise, this will be ignored. If not set, the
+                        nilearn default of extracting from a single voxel (the
+                        coordinates) will be used.
+  --allow_overlap       Permit overlapping spheres when coordinates are
+                        provided to `roi_file` and sphere-radius is not None.
   --standardize         Whether to standardize (z-score) each timeseries.
                         Default False
   --t_r t_r             The TR of the input NIfTI files, specified in seconds.
@@ -118,7 +138,7 @@ Of course, if you want full `nilearn` flexibility, you're better off using `nile
 **Required parameters**
 -  `ouput_dir`, specified by command-line only
 - `input_files`, can be specified by the command-line or by a configuration file
-- `mask_img`, can be specified by the command-line or by a configuration file
+- `roi_file`, can be specified by the command-line or by a configuration file
 
 All other arguments are optional.
 
@@ -127,7 +147,7 @@ All other arguments are optional.
 Say you want to extract the signals from two regions in an image (`img1.nii.gz`). Region masks are stored in `atlas.nii.gz`, and have the names "region1" and "region2". With this data, you want to regress out some confounds (e.g., motion realignent parameters, white matter signal, etc. stored in `confounds_for_img1.tsv`), detrend, high-pass filter, and finally standardize your data. The command to accomplish this is:
 
 ```bash
-niimasker output/ -i img1.nii.gz -m atlas.nii.gz --labels region1 region2 \
+niimasker output/ -i img1.nii.gz -r atlas.nii.gz --labels region1 region2 \
 --regressor_files confounds_for_img1.tsv --t_r 2 \
 --high_pass 0.01 --detrend --standardize
 ```
@@ -151,11 +171,14 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
 ```JSON
 {
   "input_files": [],
-  "mask_img": "",
+  "roi_file": "",
+  "mask_img": null,
   "labels": [],
   "regressor_files": null,
   "regressor_names": [],
   "as_voxels": false,
+  "sphere_size": null,
+  "allow_overlap": false,
   "standardize": false,
   "t_r": null,
   "detrend": false,
@@ -175,7 +198,7 @@ Where `config.json` is:
 
 ```JSON
 {
-  "mask_img": "some_atlas.nii.gz",
+  "roi_file": "some_atlas.nii.gz",
   "standardize": true,
   "regressor_files": [
     "confounds1.tsv",
@@ -199,14 +222,18 @@ Where `config.json` is:
 
 This set up is convenient when your `output_dir` and `input_files` vary on a subject-by-subject basis, but your post-processing and atlas might stay constant. Therefore, constants across subjects can be stored in the project's configuration file.
 
-## Working with single ROI masks
+## The ROI file
+
+The `roi_file` parameter (`-r` or `--roi_file`) can be a NIfTI image that is either a binary single region mask, or a multi-region atlas wherein each region is uniquely labeled using a numerical value. Or, it can also be a nilearn query string that fetches an atlas via nilearn. Lastly, `roi_file` can be a `.tsv` that contains a list of coordinates in the same space of the functional data (e.g., MNI coordinates). 
+
+### Working with single ROI masks
 
 `niimasker` lets you work with a binary mask such that non-zero values represent a single region of interest mask. Here, you can pass `--as_voxels` in the CLI or set `"as_voxels: true"` in your configuration file if you wish to extract the timeseries of every voxel within the region (otherwise the mean timeseries is extracted). This is useful for analyses such as ROI analysis or performing multivariate pattern analyses. A minimal example `config.json`:
 
 ```JSON
 {
   "input_files": "img1.nii.gz",
-  "mask_img": "motor_cortex.nii.gz",
+  "roi_file": "motor_cortex.nii.gz",
   "as_voxels": true,
   "standardize": true,
   "t_r": 2,
@@ -219,7 +246,7 @@ Command:
 
 `niimasker output/ -c config.json`
 
-If you want to extract out voxelwise data for more than one region, you'll have to provide a new `mask_img` each time, and thus run `niimasker` separately for each ROI. Thanks to the configuration file, however, you can just change the command-line call, but keep the configuration file the same. For example, say you have two functional images (each with a TR=2) and you want to extract out two ROIs and perform some temporal filtering. Set the `config.json` to:
+If you want to extract out voxelwise data for more than one region, you'll have to provide a new `roi_file` each time, and thus run `niimasker` separately for each ROI. Thanks to the configuration file, however, you can just change the command-line call, but keep the configuration file the same. For example, say you have two functional images (each with a TR=2) and you want to extract out two ROIs and perform some temporal filtering. Set the `config.json` to:
 
 ```JSON
 {
@@ -243,21 +270,21 @@ rois = ['motor_cortex.nii.gz', 'premotor_cortex.nii.gz']
 
 for mask in rois:
     roi_name = mask.split('.')[0] # remove file extension
-    cmd = ('niimasker timeseries/{} -m {} -c config.json'.format(roi_name, mask))
+    cmd = ('niimasker timeseries/{} -r {} -c config.json'.format(roi_name, mask))
     print(cmd)
     subprocess.run(cmd, shell=True)
 ```
 
 Each iteration changes the ROI and output directory, but the configuration is the same for all ROIs.
 
-## Working with an atlas
+### Working with an atlas
 
 `niimasker` also lets you use an atlas that contains multiple regions, where voxels belonging to each region are labeled with numerical index. This is a typical functional connectivity use-case where you're interested in analyzing the relationships between the timeseries of multiple regions. A typical `config.json` for two functional images (TR=2), where you want to extract data from a 3-region atlas and perform some additional processing would be:
 
 ```JSON
 {
   "input_files": ["img1.nii.gz", "img2.nii.gz"],
-  "mask_img": "some_atlas.nii.gz",
+  "roi_file": "some_atlas.nii.gz",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": [
     "confounds1.tsv",
@@ -286,7 +313,9 @@ Command:
 
 `niimasker output/ -c config.json`
 
-## Using atlases fetched by `nilearn`
+**Note:** When using an atlas, you can also pass a NIfTI image to `mask_img` (`--mask_img` or `-m`) to restrict atlas-extraction to specific voxels. A general example is using a subject specific whole-brain mask in order to exclude non-brain voxels from extraction. Or, you may only want the visual regions of your atlas and you can pass in an occipital lobe mask.
+
+### Using atlases fetched by `nilearn`
 
 `niimasker` also gives you the option to specify an atlas that is fetched directly by `nilearn` (a full list of datasets/atlases that can be fetched by `nilearn` can be found [here](https://nilearn.github.io/modules/reference.html#module-nilearn.datasets)). The following atlases are available:
 
@@ -299,7 +328,7 @@ Command:
 | `talairach` | `hemisphere`, `lobe`, `gyrus`, `tissue`, `ba`     | n/a                               | n/a         | [`fetch_atlas_talairach`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_talairach.html#nilearn.datasets.fetch_atlas_talairach)                                  |
 | `yeo`       | `thin_7`, `thick_7`, `thin_17`, `thick_17`         | n/a                               | n/a        | [`fetch_atlas_yeo_2011`](https://nilearn.github.io/modules/generated/nilearn.datasets.fetch_atlas_yeo_2011.html#nilearn.datasets.fetch_atlas_yeo_2011)                                     |
 
-To fetch an atlas, `niimasker` takes a query string for `mask_img` in the following format: `nilearn:<atlas name>:<atlas-parameters>`. For instance, the Yeo atlas can be fetch as so: `nilearn:yeo:thick_7`
+To fetch an atlas, `niimasker` takes a query string for `roi` in the following format: `nilearn:<atlas name>:<atlas-parameters>`. For instance, the Yeo atlas can be fetch as so: `nilearn:yeo:thick_7`
 
 Subparameters in the `basc` and `schaefer` atlases are separated by hyphen. For instance, `nilearn:basc:sym-20` to fetch the Basc symmetrical 20-network atlas, and `nilearn:schaefer:400-17-2` to fetch the 400 region, 17-network atlas at 2mm spatial resolution.
 
@@ -308,7 +337,7 @@ Using the above example, we can replace the NIfTI atlas file with the following:
 ```JSON
 {
   "input_files": ["img1.nii.gz", "img2.nii.gz"],
-  "mask_img": "nilearn:schaefer:400-17-2",
+  "roi_file": "nilearn:schaefer:400-17-2",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": [
     "confounds1.tsv",
@@ -333,6 +362,51 @@ Using the above example, we can replace the NIfTI atlas file with the following:
 }
 ```
 
+### Working with a list of coordinates
+
+A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`. These coordinates must be in the same space as the functional images (e.g., MNI). The file must contain three columns, and the first row should contain the column names, which must be: 'x', 'y', and 'z'. For instance:
+
+| x   | y   | z   |
+|-----|-----|-----|
+| 50  | -20 | -42 |
+| -38 | -27 | 69  |
+
+`niimasker` will place a sphere centered around each coordinate, and extract the mean signal of each sphere. The radius of the spheres (in mm) is set using `radius` (`--radius`). By default, `niimasker` will raise an error if any of the spheres are overlapping, but you can allow the spheres to overlap by setting `allow_overlap: true` (or using `--allow_overlap`). An example configuration file is shown below: 
+
+```JSON
+{
+  "input_files": ["img1.nii.gz", "img2.nii.gz"],
+  "roi_file": "coordinates.tsv",
+  "labels": ["region1", "region2"],
+  "regressor_files": [
+    "confounds1.tsv",
+    "confounds2.tsv"
+  ],
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
+  "radius": 6,
+  "allow_overlap": true,
+  "standardize": true,
+  "t_r": 2,
+  "high_pass": 0.01,
+  "detrend": true,
+  "discard_scans": 4,
+  "smoothing_fwhm": 6
+}
+```
+
+**Note:** A big drawback of placing spheres on coordinates is that the regions are an artificial shape, and will likely include voxels from unwanted sources such as white matter, CSF and non-brain voxels. Passing a gray matter mask to `mask_img` (`-m` or `--mask_img`) will prevent this problem by taking the intersection of the mask and the spheres generated by niimasker/nilearn. Doing so will ensure that each region you are extracting from will contain only gray matter (and therefore many, if not all, spheres will no longer be spheres). It is recommended to use subject-specific masks, such as those generated by Freesurfer. In this case, you will need to run niimasker separately for each subject (see *Working with single ROI masks* for an example python script that iteratively runs niimasker).
+
+The spheres, or the resulting sphere intersects if `mask_img` is used, are saved to `niimasker_data/spheres_img.nii.gz`.
+
 ## Working with fmriprep data
 
 `niimasker` is ideally meant for BIDS-formatted data (although currently not requiring it), and is intended to seamlessly work with [fmriprep](https://fmriprep.readthedocs.io/en/stable/). To extract data from an entire fmriprep dataset, set your `input_files` and `regressor_files` as the following in your `config.json`:
@@ -350,7 +424,7 @@ Thanks to the BIDS structure of the data, you can provide wildcard patterns for 
 ```JSON
 {
   "input_files": "fmriprep/sub*/ses*/func/*preproc_bold.nii.gz",
-  "mask_img": "some_atlas.nii.gz",
+  "roi_file": "some_atlas.nii.gz",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
   "regressor_names": [

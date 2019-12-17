@@ -15,14 +15,20 @@
     <h1>Image: {{ title }} </h1>
 
     <h2>Parameters</h2>
+
+    Note that not all of the following parameters were applicable for the extraction:
     <ul>
-      <li>Atlas/ROI mask image: {{ parameters["parameters"]["mask_img"] }}</li>
+      <li>Nilearn masker object: {{ masker_type }}</li>
+      <li>Atlas/ROI image: {{ parameters["parameters"]["roi"] }}</li>
+      <li>Mask Image: {{ parameters["parameters"]["mask_img"] }}</li>
       <li>Number of initial volumes discarded: {{ parameters["parameters"]["discard_scans"]}} </li>
       <li>Standardized: {{ parameters["parameters"]["standardize"]}} </li>
       <li>High pass filter cut-off (in Hz): {{ parameters["parameters"]["high_pass"]}} </li>
       <li>Low pass filter cut-off (in Hz): {{ parameters["parameters"]["low_pass"]}} </li>
       <li>Detrended: {{ parameters["parameters"]["detrend"]}} </li>
       <li>Smoothing FWHM (in mm): {{ parameters["parameters"]["smoothing_fwhm"]}} </li>
+      <li>Sphere radius (in mm): {{ parameters["parameters"]["radius"]}}</li>
+      <li>Allow overlapping spheres: {{ parameters["parameters"]["allow_overlap"]}}</li>
       {% if regressor_file is not none %}
         <li>Regressor file: {{ regressor_file }} </li>
         <li>Nuissance and motion regressors:
@@ -33,7 +39,7 @@
           </ul>
         </li>
       {%endif %}
-    </ul>
+    </ul> 
 
     <h2>Pipeline Details</h2>
     <ul>

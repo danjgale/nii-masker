@@ -33,12 +33,23 @@ def _cli_parser():
                              'files matching the file pattern. If so, these '
                              'files are naturally sorted by file name prior to '
                              'extraction.')
+    parser.add_argument('-r', '--roi_file', type=str, metavar='roi_file', 
+                        help='Parameter that defines the region(s) of interest. '
+                             'This can be 1) a file path to NIfTI image that is '
+                             'an atlas of multiple regions or a binary mask of '
+                             'one region, 2) a nilearn query string formatted as '
+                             '`nilearn:<atlas-name>:<atlas-parameters> (see '
+                             'online documentation), or 3) a file path to a '
+                             '.tsv file that has x, y, z columns that contain '
+                             'roi_file coordinates in MNI space. Refer to online '
+                             'documentation for more on how these options map '
+                             'onto the underlying nilearn masker classes.')
     parser.add_argument('-m', '--mask_img', type=str, metavar='mask_img',
-                        help='File path of the atlas/ROI NIfTI mask or a '
-                             'nilearn query string formatted as `nilearn:'
-                             '<atlas-name>:<atlas-parameters> (see '
-                             'Documentation). Single ROI masks must be binary, '
-                             'and atlas images must be integer labeled.')
+                        help='File path of a NIfTI mask image a to be used when '
+                             '`roi_file` is a) an multi-region atlas or a b) list '
+                             'of coordinates. This will restrict extraction to '
+                             'only voxels within the mask. If `roi_file` is a '
+                             'single-region binary mask, this will be ignored.')
     parser.add_argument('--labels', nargs='+', type=str, metavar='labels',
                         help='Labels corresponding to the mask numbers in '
                              '`mask`. Can either be a list of strings, or a '
@@ -75,6 +86,16 @@ def _cli_parser():
                              'voxel instead of the mean timeseries. This is '
                              'only available for single ROI binary masks. '
                              'Default False.')
+    parser.add_argument('--radius', type=float, metavar='radius', 
+                        help='Set the radius of the spheres (in mm) centered on '
+                             'the coordinates provided in `roi_file`. Only applicable '
+                             'when a coordinate .tsv file is passed to `roi_file`; '
+                             'otherwise, this will be ignored. If not set, '
+                             'the nilearn default of extracting from a single '
+                             'voxel (the coordinates) will be used.')
+    parser.add_argument('--allow_overlap', action='store_true', default=False,
+                        help='Permit overlapping spheres when coordinates are '
+                             'provided to `roi_file` and sphere-radius is not None.')                             
     parser.add_argument('--standardize',
                         action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
@@ -116,13 +137,13 @@ def _check_glob(x):
         raise ValueError('Input data files (NIfTIs and confounds) must be a'
                          'string or list of string')
 
+
 def _empty_to_None(x):
     """Replace an empty list from params with None"""
     if isinstance(x, list):
         if not x:
             x = None
     return x
-
 
 
 def _check_params(params):
@@ -141,8 +162,8 @@ def _check_params(params):
         if not params['input_files']:
             raise ValueError('Missing input files. Check files')
 
-    if not params['mask_img']:
-        raise ValueError('Missing mask file.')
+    if not params['roi_file']:
+        raise ValueError('Missing roi_file input.')
 
     if params['regressor_files'] is not None:
         params['regressor_files'] = _check_glob(params['regressor_files'])
@@ -154,12 +175,12 @@ def _check_params(params):
         else:
             raise ValueError('Labels must be a filename or a list of strings.')
 
-    if params['mask_img'].startswith('nilearn:'):
+    if params['roi_file'].startswith('nilearn:'):
         cache = os.path.join(params['output_dir'], 'niimasker_data')
         os.makedirs(cache, exist_ok=True)
-        atlas, labels = get_labelled_atlas(params['mask_img'], data_dir=cache,
+        atlas, labels = get_labelled_atlas(params['roi_file'], data_dir=cache,
                                            return_labels=True)
-        params['mask_img'] = atlas
+        params['roi_file'] = atlas
         params['labels'] = labels
 
     return params
@@ -215,7 +236,7 @@ def main():
     with open(param_file, 'w') as fp:
         json.dump(param_info, fp, indent=2)
 
-    shutil.copy2(params['mask_img'], metadata_path)
+    shutil.copy2(params['roi_file'], metadata_path)
 
     # run extraction
     make_timeseries(**params)
