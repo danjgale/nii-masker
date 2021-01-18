@@ -72,13 +72,15 @@ def _cli_parser():
                              'files are naturally sorted by file name prior to '
                              'extraction. Double check to make sure these are '
                              'correctly aligned with the input NIfTI files.')
-    parser.add_argument('--regressor_names', nargs='+', type=str,
-                        metavar='regressor_names',
-                        help='The regressor names to use for confound '
-                             'regression. Applies to all regressor files and '
-                             'the names must correspond to headers in each '
-                             'file. If no regressor names are provided, but '
-                             'files are, all regressors in regressor files '
+    parser.add_argument('--denoising_strategy', nargs='+',type=str,
+                        metavar='denoising_strategy',
+                        help='The denoising strategy to use for confound '
+                             'regression. Applies to all regressor files. '
+                             'The denoising strategy must be either one predefined by '
+                             'load_confounds or a list compatible with load_confounds flexible '
+                             'denoising strategy options. See the documentation '
+                             ' https://github.com/SIMEXP/load_confounds. If no denoising strategy is provided, '
+                             'but files are, all regressors in regressor files '
                              'are used.')
     parser.add_argument('--as_voxels', default=False,
                         action='store_true',
@@ -95,7 +97,7 @@ def _cli_parser():
                              'voxel (the coordinates) will be used.')
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
-                             'provided to `roi_file` and sphere-radius is not None.')                             
+                             'provided to `roi_file` and sphere-radius is not None.')                               
     parser.add_argument('--standardize',
                         action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
@@ -151,7 +153,7 @@ def _check_params(params):
 
     # convert empty list parameters to None 
     params['labels'] = _empty_to_None(params['labels'])
-    params['regressor_names'] = _empty_to_None(params['regressor_names'])
+    params['denoising_strategy'] = _empty_to_None(params['denoising_strategy'])
     params['regressor_files'] = _empty_to_None(params['regressor_files'])
 
     if params['input_files'] is None:

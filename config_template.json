@@ -4,7 +4,7 @@
   "mask_img": null,
   "labels": [],
   "regressor_files": null,
-  "regressor_names": [],
+  "denoising_strategy": [],
   "as_voxels": false,
   "sphere_size": null,
   "allow_overlap": false,
