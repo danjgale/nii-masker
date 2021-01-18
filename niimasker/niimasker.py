@@ -16,6 +16,8 @@ from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
 
 from niimasker.report import generate_report
 
+import load_confounds
+
 
 class FunctionalImage(object):
     def __init__(self, fname):
@@ -27,17 +29,27 @@ class FunctionalImage(object):
         self.regressors = None
         self.regressor_file = None
 
-    def set_regressors(self, regressor_fname, regressor_labels=None):
+    def set_regressors(self, regressor_fname, denoising_strategy=None):
         """Create regressors for masking"""
         self.regressor_file = regressor_fname
-        all_regressors = pd.read_csv(regressor_fname, sep=r'\t',
-                                     engine='python')
-        if regressor_labels is not None:
-            self.regressors = all_regressors[regressor_labels]
-        else:
-            self.regressors = all_regressors
-
-
+        
+        if denoising_strategy is not None:
+            #predefined strategy
+            if (len(denoising_strategy)==1):
+                denoising_strategy = denoising_strategy[0]
+                if denoising_strategy in ['Params2','Params6','Params9','Params24','Params36','AnatCompCor','TempCompCor']:
+                    conf = eval('load_confounds.{}()'.format(denoising_strategy))
+                    self.regressors = conf.load(self.regressor_file)
+                else:
+                    raise ValueError('Provided denoising strategy is not recognized.')
+            #flexible strategy
+            else:
+                if set(denoising_strategy) <= set(['motion','high_pass','wm_csf', 'compcor', 'global']):
+                    conf = load_confounds.Confounds(strategy=denoising_strategy)
+                    self.regressors = conf.load(self.regressor_file)
+                else:
+                    raise ValueError('Provided denoising strategy is not recognized.')
+                    
     def discard_scans(self, n_scans):
         # crop scans from image
         arr = self.img.get_data()
@@ -46,7 +58,7 @@ class FunctionalImage(object):
 
         if self.regressors is not None:
             # crop from regressors
-            self.regressors = self.regressors.iloc[n_scans:, :]
+            self.regressors = self.regressors[n_scans:, :]
 
 
     def extract(self, masker, as_voxels=False, labels=None):
@@ -55,8 +67,7 @@ class FunctionalImage(object):
         if self.regressors is None:
             timeseries = masker.fit_transform(self.img)
         else:
-            timeseries = masker.fit_transform(self.img,
-                                              confounds=self.regressors.values)
+            timeseries = masker.fit_transform(self.img,confounds=self.regressors)
 
         # determine column names for timeseries
         if isinstance(masker, NiftiMasker):
@@ -181,7 +192,7 @@ def _set_masker(roi_file, as_voxels=False, **kwargs):
                 
     
 def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
-                   regressor_names=None, as_voxels=False,
+                   denoising_strategy=None, as_voxels=False,
                    labels=None, discard_scans=None):
     """Runs the full masking process and saves output for a single image;
     the main function used by `make_timeseries`
@@ -189,7 +200,7 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
     img = FunctionalImage(img_name)
 
     if regressor_file is not None:
-        img.set_regressors(regressor_file, regressor_names)
+        img.set_regressors(regressor_file, denoising_strategy)
     if discard_scans is not None:
         if discard_scans > 0:
             img.discard_scans(discard_scans)
@@ -204,7 +215,7 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
 
 
 def make_timeseries(input_files, roi_file, output_dir, labels=None,
-                    regressor_files=None, regressor_names=None,
+                    regressor_files=None, denoising_strategy=None,
                     as_voxels=False, discard_scans=None,
                     n_jobs=1, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
@@ -228,6 +239,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     regressors : list of str, optional
         Regressor names to select from `regressor_files` headers. Default is
         None
+    denoising_strategy: TO DO
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
@@ -260,7 +272,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     if n_jobs == 1:
         for i, img in enumerate(input_files):
             _mask_and_save(masker, img, output_dir, regressor_files[i],
-                           regressor_names, as_voxels, labels, discard_scans)
+                          denoising_strategy, as_voxels, labels, discard_scans)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
@@ -268,7 +280,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
             input_files, # iterate over
             repeat(output_dir),
             regressor_files, # iterate over, paired with input_files
-            repeat(regressor_names),
+            repeat(denoising_strategy),
             repeat(as_voxels),
             repeat(labels),
             repeat(discard_scans)
