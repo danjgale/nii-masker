@@ -242,6 +242,9 @@ def main():
 
     # run extraction
     make_timeseries(**params)
+    ############################################
+    ####TODO: replace this w/ run workflow
+    ############################################
 
 
 if __name__ == '__main__':
