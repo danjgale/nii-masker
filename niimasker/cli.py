@@ -72,22 +72,16 @@ def _cli_parser():
                              'files are naturally sorted by file name prior to '
                              'extraction. Double check to make sure these are '
                              'correctly aligned with the input NIfTI files.')
-    ###########################################################################
-    # Replace this w/ load confounds options
-    ############################################################################
-    #parser.add_argument('--regressor_names', nargs='+', type=str,
-    #                    metavar='regressor_names',
-    #                    help='The regressor names to use for confound '
-    #                         'regression. Applies to all regressor files and '
-    #                         'the names must correspond to headers in each '
-    #                         'file. If no regressor names are provided, but '
-    #                         'files are, all regressors in regressor files '
-    #                         'are used.')
-    
     parser.add_argument('--denoising_strategy', nargs='+',type=str,
                         metavar='denoising_strategy',
-                        help='load_confounds denoising strategy.')
-    ###########################################################################
+                        help='The denoising strategy to use for confound '
+                             'regression. Applies to all regressor files. '
+                             'The denoising strategy must be either one predefined by '
+                             'load_confounds or a list compatible with load_confounds flexible '
+                             'denoising strategy options. See the documentation '
+                             ' https://github.com/SIMEXP/load_confounds. If no denoising strategy is provided, '
+                             'but files are, all regressors in regressor files '
+                             'are used.')
     parser.add_argument('--as_voxels', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
@@ -103,7 +97,7 @@ def _cli_parser():
                              'voxel (the coordinates) will be used.')
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
-                             'provided to `roi_file` and sphere-radius is not None.')                               ############################################################################
+                             'provided to `roi_file` and sphere-radius is not None.')                               
     parser.add_argument('--standardize',
                         action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '
@@ -123,7 +117,6 @@ def _cli_parser():
     parser.add_argument('--smoothing_fwhm', type=float, metavar='smoothing_fwhm',
                         help='Smoothing kernel FWHM (in mm) if spatial smoothing '
                              'is desired.')
-    ###########################################################################
     parser.add_argument('--discard_scans', type=int, metavar='discard_scans',
                         help='Discard the first N scans of each functional '
                              'NIfTI image.')
