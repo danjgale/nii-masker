@@ -241,7 +241,7 @@ def plot_regressor_corr(data, regressors, fname, cmap):
     result = np.zeros((regressors.shape[1], data.shape[1]))
     for i in np.arange(regressors.shape[1]):
         for j in np.arange(data.shape[1]):
-            regressor = regressors[:, i]
+            regressor = regressors.values[:, i]
             timeseries = data.values[:, j]
             r, p = pearsonr(timeseries, regressor)
             result[i, j] = r
@@ -263,11 +263,8 @@ def plot_regressor_corr(data, regressors, fname, cmap):
     for i, lab in enumerate(data.columns):
         ax.get_xticklabels()[i].set_color(cmap(cmap_vals[i]))
     ax.set_yticks(np.arange(regressors.shape[1]))
-    ########################################################
-    ##TO DO: yticklabels not from dataframe
-    ########################################################
-    #ax.set_yticklabels(regressors.columns, rotation=0,
-    #                   fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
+    ax.set_yticklabels(regressors.columns, rotation=0,
+                       fontdict={'verticalalignment': 'center', 'horizontalalignment': 'right'})
     fname += '_regressors.png'
     fig.savefig(fname, bbox_inches='tight')
     plt.close()

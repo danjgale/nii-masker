@@ -26,7 +26,6 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 - nibabel
 - natsort
 - jinja2
-- load_confounds
 
 First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
@@ -37,7 +36,7 @@ First, download this repository to a directory. Then, navigate to the directory,
 usage: niimasker [-h] [-i input_files [input_files ...]] [-r roi_file]
                  [-m mask_img] [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
-                 [--denoising_strategy denoising_strategy [denoising_strategy ...]]
+                 [--regressor_names regressor_names [regressor_names ...]]
                  [--as_voxels] [--radius radius] [--allow_overlap]
                  [--standardize] [--t_r t_r] [--high_pass high_pass]
                  [--low_pass low_pass] [--detrend]
@@ -91,15 +90,12 @@ optional arguments:
                         these files are naturally sorted by file name prior to
                         extraction. Double check to make sure these are
                         correctly aligned with the input NIfTI files.
-  --denoising_strategy denoising_strategy [denoising_strategy ...]
-                        The denoising strategy to use for confound
-                        regression. Applies to all regressor files.
-                        The denoising strategy must be either one predefined by
-                        load_confounds or a list compatible with load_confounds flexible
-                        denoising strategy options. See the documentation
-                        https://github.com/SIMEXP/load_confounds. If no denoising strategy is provided,
-                        but files are, all regressors in regressor files
-                        are used.
+  --regressor_names regressor_names [regressor_names ...]
+                        The regressor names to use for confound regression.
+                        Applies to all regressor files and the names must
+                        correspond to headers in each file. If no regressor
+                        names are provided, but files are, all regressors in
+                        regressor files are used.
   --as_voxels           Whether to extract out the timeseries of each voxel
                         instead of the mean timeseries. This is only available
                         for single ROI binary masks. Default False.
@@ -179,7 +175,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "mask_img": null,
   "labels": [],
   "regressor_files": null,
-  "denoising_strategy": [],
+  "regressor_names": [],
   "as_voxels": false,
   "sphere_size": null,
   "allow_overlap": false,
@@ -208,7 +204,16 @@ Where `config.json` is:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
   "t_r": 2,
   "high_pass": 0.01,
   "smoothing_fwhm": 6
@@ -285,7 +290,16 @@ Each iteration changes the ROI and output directory, but the configuration is th
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -329,7 +343,16 @@ Using the above example, we can replace the NIfTI atlas file with the following:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -359,7 +382,16 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "wm",
+    "csf"
+  ],
   "radius": 6,
   "allow_overlap": true,
   "standardize": true,
@@ -395,7 +427,16 @@ Thanks to the BIDS structure of the data, you can provide wildcard patterns for 
   "roi_file": "some_atlas.nii.gz",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
-  "denoising_strategy": "Params9",
+  "regressor_names": [
+    "trans_x",
+    "trans_y",
+    "trans_z",
+    "rot_x",
+    "rot_y",
+    "rot_z",
+    "csf",
+    "white_matter",
+  ],
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
