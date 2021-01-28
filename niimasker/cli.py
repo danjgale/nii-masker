@@ -72,6 +72,14 @@ def _cli_parser():
                              'files are naturally sorted by file name prior to '
                              'extraction. Double check to make sure these are '
                              'correctly aligned with the input NIfTI files.')
+    parser.add_argument('--regressor_names', nargs='+', type=str,
+                        metavar='regressor_names',
+                        help='The regressor names to use for confound '
+                             'regression. Applies to all regressor files and '
+                             'the names must correspond to headers in each '
+                             'file. If no regressor names are provided, but '
+                             'files are, all regressors in regressor files '
+                             'are used.')
     parser.add_argument('--denoising_strategy', nargs='+',type=str,
                         metavar='denoising_strategy',
                         help='The denoising strategy to use for confound '
@@ -139,7 +147,6 @@ def _check_glob(x):
         raise ValueError('Input data files (NIfTIs and confounds) must be a'
                          'string or list of string')
 
-
 def _empty_to_None(x):
     """Replace an empty list from params with None"""
     if isinstance(x, list):
@@ -147,13 +154,13 @@ def _empty_to_None(x):
             x = None
     return x
 
-
 def _check_params(params):
     """Ensure that required fields are included and correctly formatted"""
 
     # convert empty list parameters to None 
     params['labels'] = _empty_to_None(params['labels'])
     params['denoising_strategy'] = _empty_to_None(params['denoising_strategy'])
+    params['regressor_names'] = _empty_to_None(params['regressor_names'])
     params['regressor_files'] = _empty_to_None(params['regressor_files'])
 
     if params['input_files'] is None:
@@ -196,7 +203,6 @@ def _merge_params(cli, config):
     params = dict(list(cli.items()) + list(config.items()))
     return params
 
-
 def main():
     """Primary entrypoint in program"""
     params = vars(_cli_parser())
@@ -226,6 +232,7 @@ def main():
         'nilearn': nilearn.__version__,
         'nibabel': nibabel.__version__,
         'natsort': natsort.__version__
+        #load_confounds version?
     }
 
     # export command-line call and parameters to a file
@@ -242,9 +249,6 @@ def main():
 
     # run extraction
     make_timeseries(**params)
-    ############################################
-    ####TODO: replace this w/ run workflow
-    ############################################
 
 
 if __name__ == '__main__':

@@ -4,19 +4,16 @@ series data.
 
 import os
 import warnings
-from itertools import repeat
 import multiprocessing
+import load_confounds
 import numpy as np
 import pandas as pd
 import nibabel as nib
+from itertools import repeat
 from nilearn.image import load_img, math_img, resample_to_img
-from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker, 
-                                NiftiSpheresMasker)
+from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker,NiftiSpheresMasker)
 from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
-
 from niimasker.report import generate_report
-
-import load_confounds
 
 
 class FunctionalImage(object):
@@ -28,27 +25,22 @@ class FunctionalImage(object):
 
         self.regressors = None
         self.regressor_file = None
-
-    def set_regressors(self, regressor_fname, denoising_strategy=None):
+                    
+    def set_regressors(self, regressor_fname, denoiser = None):
         """Create regressors for masking"""
         self.regressor_file = regressor_fname
         
-        if denoising_strategy is not None:
-            #predefined strategy
-            if (len(denoising_strategy)==1):
-                denoising_strategy = denoising_strategy[0]
-                if denoising_strategy in ['Params2','Params6','Params9','Params24','Params36','AnatCompCor','TempCompCor']:
-                    conf = eval('load_confounds.{}()'.format(denoising_strategy))
-                    self.regressors = conf.load(self.regressor_file)
-                else:
-                    raise ValueError('Provided denoising strategy is not recognized.')
-            #flexible strategy
-            else:
-                if set(denoising_strategy) <= set(['motion','high_pass','wm_csf', 'compcor', 'global']):
-                    conf = load_confounds.Confounds(strategy=denoising_strategy)
-                    self.regressors = conf.load(self.regressor_file)
-                else:
-                    raise ValueError('Provided denoising strategy is not recognized.')
+        #No strategy passed
+        if denoiser is None:
+            if regressor_fname is None:
+                pass #do nothing
+            else: #If there is a file nothing specified, use whole file
+                self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python').values
+        elif isinstance(denoiser,list): #denoiser is a list of labels
+                self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python')[denoiser].values
+        else: #denoiser is a load_confounds parser
+            self.regressors = denoiser.load(self.regressor_file)
+            
                     
     def discard_scans(self, n_scans):
         # crop scans from image
@@ -190,17 +182,55 @@ def _set_masker(roi_file, as_voxels=False, **kwargs):
     
     return masker
                 
-    
-def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
-                   denoising_strategy=None, as_voxels=False,
-                   labels=None, discard_scans=None):
+def _make_denoiser(denoising_strategy):
+    """Parses denoising_strategy and creates load_confounds object."""
+    #predefined strategy
+    if (len(denoising_strategy)==1):
+        denoising_strategy = denoising_strategy[0]
+        if denoising_strategy in ['Params2','Params6','Params9','Params24','Params36','AnatCompCor','TempCompCor']:
+            denoiser = eval('load_confounds.{}()'.format(denoising_strategy))
+        else:
+            raise ValueError('Provided denoising strategy is not recognized.')
+    #flexible strategy
+    else:
+        if set(denoising_strategy) <= set(['motion','high_pass','wm_csf', 'compcor', 'global']):
+            denoiser = load_confounds.Confounds(strategy=denoising_strategy)
+        else:
+            raise ValueError('Provided denoising strategy is not recognized.')
+    return denoiser
+
+def _set_denoiser(denoising_strategy=None,regressor_names=None,regressor_files=None):
+    """Handles denoising arguments, returns either None, load_confounds object, or regressor_names."""
+    #if there are files provided
+    if regressor_files is not None:
+        if regressor_names is not None:
+            if denoising_strategy is not None:
+                warnings.warn('Both regressor_names and denoising_strategy were specified, only regressor_names will be used.')
+            denoiser = regressor_names
+            
+        elif denoising_strategy is not None:
+            denoiser = _make_denoiser(denoising_strategy)
+        else:
+            warnings.warn('No strategy specified, full regressor_files will be used for denoising.')
+            denoiser = None
+    #If there are no files
+    else:
+        if (regressor_names is not None) or (denoising_strategy is not None):
+            warnings.warn('Either regressor_names or denoising_strategy were specified without regressor_files. '
+                          'Continuing without denoising.')
+        denoiser = None
+    return denoiser
+
+
+def _mask_and_save(masker, denoiser, img_name, output_dir, regressor_file=None,
+                  as_voxels=False,labels=None, discard_scans=None):
     """Runs the full masking process and saves output for a single image;
     the main function used by `make_timeseries`
     """
     img = FunctionalImage(img_name)
-
-    if regressor_file is not None:
-        img.set_regressors(regressor_file, denoising_strategy)
+    
+    img.set_regressors(regressor_file, denoiser)
+        
     if discard_scans is not None:
         if discard_scans > 0:
             img.discard_scans(discard_scans)
@@ -211,11 +241,11 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
     out_fname = os.path.basename(img.fname).split('.')[0] + '_timeseries.tsv'
     img.data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
                     float_format='%.8f')
-    generate_report(img, output_dir)
+    #generate_report(img, output_dir)
 
 
 def make_timeseries(input_files, roi_file, output_dir, labels=None,
-                    regressor_files=None, denoising_strategy=None,
+                    regressor_files=None, denoising_strategy=None, regressor_names=None,
                     as_voxels=False, discard_scans=None,
                     n_jobs=1, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
@@ -239,7 +269,8 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     regressors : list of str, optional
         Regressor names to select from `regressor_files` headers. Default is
         None
-    denoising_strategy: TO DO
+    denoising_strategy: str or list of str, optional
+        Specifies which load_confounds parser to use.
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
@@ -256,12 +287,12 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
         Keyword arguments for `nilearn.input_data` Masker objects.
     """
     masker = _set_masker(roi_file, as_voxels, **masker_kwargs)
+    denoiser = _set_denoiser(denoising_strategy=denoising_strategy,regressor_names=regressor_names,regressor_files=regressor_files)
 
     # create and save spheres image if coordinates are provided
     if isinstance(masker, NiftiSpheresMasker):
         masker.spheres_img = _get_spheres_from_masker(masker, input_files[0])
-        masker.spheres_img.to_filename(os.path.join(output_dir, 'niimasker_data',
-                                                    'spheres_image.nii.gz'))
+        masker.spheres_img.to_filename(os.path.join(output_dir, 'niimasker_data','spheres_image.nii.gz'))
 
     # set as list of NoneType if no regressor files; makes it easy for
     # iterations
@@ -271,8 +302,8 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     # no parallelization
     if n_jobs == 1:
         for i, img in enumerate(input_files):
-            _mask_and_save(masker, img, output_dir, regressor_files[i],
-                          denoising_strategy, as_voxels, labels, discard_scans)
+            _mask_and_save(masker, denoiser, img, output_dir, regressor_files[i],
+                            as_voxels, labels, discard_scans)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
