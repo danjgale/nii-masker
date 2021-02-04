@@ -27,7 +27,7 @@ class FunctionalImage(object):
         self.regressor_file = None
                     
     def set_regressors(self, regressor_fname, denoiser = None):
-        """Create regressors for masking"""
+        """Use denoiser to set appropriate regressors."""
         self.regressor_file = regressor_fname
         
         #No strategy passed
@@ -36,8 +36,8 @@ class FunctionalImage(object):
                 pass #do nothing
             else: #If there is a file nothing specified, use whole file
                 self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python').values
-        elif isinstance(denoiser,list): #denoiser is a list of labels
-                self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python')[denoiser].values
+        elif isinstance(denoiser,list): #denoiser is list of str (regressor_names)
+            self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python')[denoiser].values
         else: #denoiser is a load_confounds parser
             self.regressors = denoiser.load(self.regressor_file)
             
@@ -55,11 +55,8 @@ class FunctionalImage(object):
 
     def extract(self, masker, as_voxels=False, labels=None):
         print('  Extracting from {}'.format(os.path.basename(self.fname)))
-
-        if self.regressors is None:
-            timeseries = masker.fit_transform(self.img)
-        else:
-            timeseries = masker.fit_transform(self.img,confounds=self.regressors)
+        
+        timeseries = masker.fit_transform(self.img,confounds=self.regressors)
 
         # determine column names for timeseries
         if isinstance(masker, NiftiMasker):
@@ -85,11 +82,8 @@ class FunctionalImage(object):
 
 
 ## MASKING FUNCTIONS
-
-
 def _get_spheres_from_masker(masker, img):
     """Re-extract spheres from coordinates to make niimg. 
-
     Note that this will take a while, as it uses the exact same function that
     nilearn calls to extract data for NiftiSpheresMasker
     """
@@ -185,18 +179,13 @@ def _set_masker(roi_file, as_voxels=False, **kwargs):
 def _make_denoiser(denoising_strategy):
     """Parses denoising_strategy and creates load_confounds object."""
     #predefined strategy
-    if (len(denoising_strategy)==1):
-        denoising_strategy = denoising_strategy[0]
-        if denoising_strategy in ['Params2','Params6','Params9','Params24','Params36','AnatCompCor','TempCompCor']:
-            denoiser = eval('load_confounds.{}()'.format(denoising_strategy))
-        else:
-            raise ValueError('Provided denoising strategy is not recognized.')
+    if (len(denoising_strategy) == 1) and (denoising_strategy[0] in ['Params2','Params6','Params9','Params24','Params36','AnatCompCor','TempCompCor']):
+        denoiser = eval('load_confounds.{}()'.format(denoising_strategy[0]))
     #flexible strategy
+    elif set(denoising_strategy) <= set(['motion','high_pass','wm_csf', 'compcor', 'global']):
+        denoiser = load_confounds.Confounds(strategy=denoising_strategy)
     else:
-        if set(denoising_strategy) <= set(['motion','high_pass','wm_csf', 'compcor', 'global']):
-            denoiser = load_confounds.Confounds(strategy=denoising_strategy)
-        else:
-            raise ValueError('Provided denoising strategy is not recognized.')
+        raise ValueError('Provided denoising strategy is not recognized.')
     return denoiser
 
 def _set_denoiser(denoising_strategy=None,regressor_names=None,regressor_files=None):
@@ -206,10 +195,10 @@ def _set_denoiser(denoising_strategy=None,regressor_names=None,regressor_files=N
         if regressor_names is not None:
             if denoising_strategy is not None:
                 warnings.warn('Both regressor_names and denoising_strategy were specified, only regressor_names will be used.')
-            denoiser = regressor_names
+            denoiser = regressor_names #list of str
             
         elif denoising_strategy is not None:
-            denoiser = _make_denoiser(denoising_strategy)
+            denoiser = _make_denoiser(denoising_strategy) #load_confounds object
         else:
             warnings.warn('No strategy specified, full regressor_files will be used for denoising.')
             denoiser = None
@@ -219,6 +208,7 @@ def _set_denoiser(denoising_strategy=None,regressor_names=None,regressor_files=N
             warnings.warn('Either regressor_names or denoising_strategy were specified without regressor_files. '
                           'Continuing without denoising.')
         denoiser = None
+        #should set regressor_names and denoising_strategy to None here?
     return denoiser
 
 
@@ -241,7 +231,7 @@ def _mask_and_save(masker, denoiser, img_name, output_dir, regressor_file=None,
     out_fname = os.path.basename(img.fname).split('.')[0] + '_timeseries.tsv'
     img.data.to_csv(os.path.join(output_dir, out_fname), sep='\t', index=False,
                     float_format='%.8f')
-    #generate_report(img, output_dir)
+    generate_report(img, output_dir)
 
 
 def make_timeseries(input_files, roi_file, output_dir, labels=None,
