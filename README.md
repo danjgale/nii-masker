@@ -91,6 +91,12 @@ optional arguments:
                         these files are naturally sorted by file name prior to
                         extraction. Double check to make sure these are
                         correctly aligned with the input NIfTI files.
+  --regressor_names regressor_names [regressor_names ...]
+                        The regressor names to use for confound regression.
+                        Applies to all regressor files and the names must
+                        correspond to headers in each file. If no regressor
+                        names are provided, but files are, all regressors in
+                        regressor files are used.
   --denoising_strategy denoising_strategy [denoising_strategy ...]
                         The denoising strategy to use for confound
                         regression. Applies to all regressor files.
