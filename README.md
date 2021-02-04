@@ -179,6 +179,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "mask_img": null,
   "labels": [],
   "regressor_files": null,
+  "regressor_names": [],
   "denoising_strategy": [],
   "as_voxels": false,
   "sphere_size": null,
@@ -208,7 +209,7 @@ Where `config.json` is:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "denoising_strategy": "Params6",
   "t_r": 2,
   "high_pass": 0.01,
   "smoothing_fwhm": 6
@@ -285,7 +286,7 @@ Each iteration changes the ROI and output directory, but the configuration is th
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "denoising_strategy": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -329,7 +330,7 @@ Using the above example, we can replace the NIfTI atlas file with the following:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "denoising_strategy": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -359,7 +360,7 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params9",
+  "denoising_strategy": "Params6",
   "radius": 6,
   "allow_overlap": true,
   "standardize": true,
@@ -395,7 +396,7 @@ Thanks to the BIDS structure of the data, you can provide wildcard patterns for 
   "roi_file": "some_atlas.nii.gz",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
-  "denoising_strategy": "Params9",
+  "denoising_strategy": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,

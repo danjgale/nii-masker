@@ -231,8 +231,7 @@ def main():
         'scikit-learn': sklearn.__version__,
         'nilearn': nilearn.__version__,
         'nibabel': nibabel.__version__,
-        'natsort': natsort.__version__
-        #load_confounds version?
+        'natsort': natsort.__version__,
     }
 
     # export command-line call and parameters to a file
