@@ -105,7 +105,7 @@ def _cli_parser():
                              'voxel (the coordinates) will be used.')
     parser.add_argument('--allow_overlap', action='store_true', default=False,
                         help='Permit overlapping spheres when coordinates are '
-                             'provided to `roi_file` and sphere-radius is not None.')                               
+                             'provided to `roi_file` and sphere-radius is not None.')                             
     parser.add_argument('--standardize',
                         action='store_true', default=False,
                         help='Whether to standardize (z-score) each timeseries. '

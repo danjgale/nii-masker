@@ -40,8 +40,7 @@ class FunctionalImage(object):
             self.regressors = pd.read_csv(self.regressor_file, sep=r'\t',engine='python')[denoiser].values
         else: #denoiser is a load_confounds parser
             self.regressors = denoiser.load(self.regressor_file)
-            
-                    
+           
     def discard_scans(self, n_scans):
         # crop scans from image
         arr = self.img.get_data()
@@ -50,7 +49,7 @@ class FunctionalImage(object):
 
         if self.regressors is not None:
             # crop from regressors
-            self.regressors = self.regressors[n_scans:, :]
+            self.regressors = self.regressors.iloc[n_scans:, :]
 
 
     def extract(self, masker, as_voxels=False, labels=None):
@@ -220,7 +219,7 @@ def _mask_and_save(masker, denoiser, img_name, output_dir, regressor_file=None,
     img = FunctionalImage(img_name)
     
     img.set_regressors(regressor_file, denoiser)
-        
+
     if discard_scans is not None:
         if discard_scans > 0:
             img.discard_scans(discard_scans)
@@ -301,7 +300,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
             input_files, # iterate over
             repeat(output_dir),
             regressor_files, # iterate over, paired with input_files
-            repeat(denoising_strategy),
+            repeat(regressor_names),
             repeat(as_voxels),
             repeat(labels),
             repeat(discard_scans)

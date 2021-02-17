@@ -26,7 +26,6 @@ Abraham, A., Pedregosa, F., Eickenberg, M., Gervais, P., Mueller, A., Kossaifi, 
 - nibabel
 - natsort
 - jinja2
-- load_confounds
 
 First, download this repository to a directory. Then, navigate to the directory, `nii-masker/`, and run `pip install .` to install `niimasker`. To check your installation, run `niimasker -h` and you should see the help information.
 
@@ -37,7 +36,7 @@ First, download this repository to a directory. Then, navigate to the directory,
 usage: niimasker [-h] [-i input_files [input_files ...]] [-r roi_file]
                  [-m mask_img] [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
-                 [--denoising_strategy denoising_strategy [denoising_strategy ...]]
+                 [--regressor_names regressor_names [regressor_names ...]]
                  [--as_voxels] [--radius radius] [--allow_overlap]
                  [--standardize] [--t_r t_r] [--high_pass high_pass]
                  [--low_pass low_pass] [--detrend]
