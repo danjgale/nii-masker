@@ -33,7 +33,8 @@ setup(
         'scipy',
         'scikit-learn',
         'matplotlib',
-        'jinja2'
+        'jinja2',
+        'load_confounds'
     ],
     tests_require=test_deps,
     extras_require=extras,
