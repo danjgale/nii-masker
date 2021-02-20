@@ -36,12 +36,14 @@ First, download this repository to a directory. Then, navigate to the directory,
 usage: niimasker [-h] [-i input_files [input_files ...]] [-r roi_file]
                  [-m mask_img] [--labels labels [labels ...]]
                  [--regressor_files regressor_files [regressor_files ...]]
+                 [--regressors regressors [regressors ...]]
                  [--regressor_names regressor_names [regressor_names ...]]
                  [--as_voxels] [--radius radius] [--allow_overlap]
                  [--standardize] [--t_r t_r] [--high_pass high_pass]
                  [--low_pass low_pass] [--detrend]
                  [--smoothing_fwhm smoothing_fwhm]
-                 [--discard_scans discard_scans] [--n_jobs n_jobs] [-c config]
+                 [--discard_scans discard_scans] [--n_jobs n_jobs]
+                 [-c config]
                  output_dir
 
 positional arguments:
@@ -50,94 +52,102 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -i input_files [input_files ...], --input_files input_files [input_files ...]
-                        One or more input NIfTI images. Can also be a single
-                        string with a wildcard (*) to specify all files
-                        matching the file pattern. If so, these files are
-                        naturally sorted by file name prior to extraction.
+                        One or more input NIfTI images. Can also be a
+                        single string with a wildcard (*) to specify all
+                        files matching the file pattern. If so, these
+                        files are naturally sorted by file name prior to
+                        extraction.
   -r roi_file, --roi_file roi_file
-                        Parameter that defines the region(s) of interest. This
-                        can be 1) a file path to NIfTI image that is an atlas
-                        of multiple regions or a binary mask of one region, 2)
-                        a nilearn query string formatted as `nilearn:<atlas-
-                        name>:<atlas-parameters> (see online documentation),
-                        or 3) a file path to a .tsv file that has x, y, z
-                        columns that contain roi_file coordinates in MNI
-                        space. Refer to online documentation for more on how
-                        these options map onto the underlying nilearn masker
+                        Parameter that defines the region(s) of interest.
+                        This can be 1) a file path to NIfTI image that is
+                        an atlas of multiple regions or a binary mask of
+                        one region, 2) a nilearn query string formatted
+                        as `nilearn:<atlas-name>:<atlas-parameters> (see
+                        online documentation), or 3) a file path to a
+                        .tsv file that has x, y, z columns that contain
+                        roi_file coordinates in MNI space. Refer to
+                        online documentation for more on how these
+                        options map onto the underlying nilearn masker
                         classes.
   -m mask_img, --mask_img mask_img
                         File path of a NIfTI mask image a to be used when
-                        `roi_file` is a) an multi-region atlas or a b) list of
-                        coordinates. This will restrict extraction to only
-                        voxels within the mask. If `roi_file` is a single-
-                        region binary mask, this will be ignored.
+                        `roi_file` is a) an multi-region atlas or a b)
+                        list of coordinates. This will restrict
+                        extraction to only voxels within the mask. If
+                        `roi_file` is a single-region binary mask, this
+                        will be ignored.
   --labels labels [labels ...]
-                        Labels corresponding to the mask numbers in `mask`.
-                        Can either be a list of strings, or a .tsv file that
-                        contains a `Labels` column. Labels must be sorted in
-                        ascending order to correctly correspond to the atlas
-                        indices. The number of labels provided must match the
-                        number of non-zero indices in `mask`. If none are
-                        provided, numeric indices are used (default)
+                        Labels corresponding to the mask numbers in
+                        `mask`. Can either be a list of strings, or a
+                        .tsv file that contains a `Labels` column. Labels
+                        must be sorted in ascending order to correctly
+                        correspond to the atlas indices. The number of
+                        labels provided must match the number of non-zero
+                        indices in `mask`. If none are provided, numeric
+                        indices are used (default)
   --regressor_files regressor_files [regressor_files ...]
                         One or more tabular files with regressors in each
-                        column. The number of files match the number of input
-                        NIfTI files provided and must be in the same order.
-                        The number of rows in each file must match the number
-                        of timepoints in their respective input NIfTI files.
-                        Can also be a single string with a wildcard (*) to
-                        specify all files matching the file pattern. If so,
-                        these files are naturally sorted by file name prior to
+                        column. The number of files match the number of
+                        input NIfTI files provided and must be in the
+                        same order. The number of rows in each file must
+                        match the number of timepoints in their
+                        respective input NIfTI files. Can also be a
+                        single string with a wildcard (*) to specify all
+                        files matching the file pattern. If so, these
+                        files are naturally sorted by file name prior to
                         extraction. Double check to make sure these are
                         correctly aligned with the input NIfTI files.
-  --regressor_names regressor_names [regressor_names ...]
-                        The regressor names to use for confound regression.
-                        Applies to all regressor files and the names must
-                        correspond to headers in each file. If no regressor
-                        names are provided, but files are, all regressors in
-                        regressor files are used.
-  --denoising_strategy denoising_strategy [denoising_strategy ...]
-                        The denoising strategy to use for confound
-                        regression. Applies to all regressor files.
-                        The denoising strategy must be either one predefined by
-                        load_confounds or a list compatible with load_confounds flexible
+  --regressors regressors [regressors ...]
+                        Regressor names or strategy to use for confound
+                        regression. Must be a) list of specified column
+                        names in all of the regressor_files, b) a
+                        predefined strategy by load_confounds, or c) a
+                        list compatible with load_confounds flexible
                         denoising strategy options. See the documentation
-                        https://github.com/SIMEXP/load_confounds. If no denoising strategy is provided,
-                        but files are, all regressors in regressor files
-                        are used.
-  --as_voxels           Whether to extract out the timeseries of each voxel
-                        instead of the mean timeseries. This is only available
-                        for single ROI binary masks. Default False.
-  --radius radius       Set the radius of the spheres (in mm) centered on the
-                        coordinates provided in `roi_file`. Only applicable
-                        when a coordinate .tsv file is passed to `roi_file`;
-                        otherwise, this will be ignored. If not set, the
-                        nilearn default of extracting from a single voxel (the
-                        coordinates) will be used.
+                        https://github.com/SIMEXP/load_confounds. If no
+                        regressor information provided, then all
+                        regressors in regressor_files are used.
+  --regressor_names regressor_names [regressor_names ...]
+                        Deprecated and will be removed in future
+                        versions. To define specific regressors, please
+                        use --regressors.
+  --as_voxels           Whether to extract out the timeseries of each
+                        voxel instead of the mean timeseries. This is
+                        only available for single ROI binary masks.
+                        Default False.
+  --radius radius       Set the radius of the spheres (in mm) centered on
+                        the coordinates provided in `roi_file`. Only
+                        applicable when a coordinate .tsv file is passed
+                        to `roi_file`; otherwise, this will be ignored.
+                        If not set, the nilearn default of extracting
+                        from a single voxel (the coordinates) will be
+                        used.
   --allow_overlap       Permit overlapping spheres when coordinates are
-                        provided to `roi_file` and sphere-radius is not None.
+                        provided to `roi_file` and sphere-radius is not
+                        None.
   --standardize         Whether to standardize (z-score) each timeseries.
                         Default False
-  --t_r t_r             The TR of the input NIfTI files, specified in seconds.
-                        Must be included if temporal filtering or realignment
-                        derivatives are specified.
+  --t_r t_r             The TR of the input NIfTI files, specified in
+                        seconds. Must be included if temporal filtering
+                        or realignment derivatives are specified.
   --high_pass high_pass
                         High pass filter cut off in Hertz. If it is not
                         specified, no filtering is done. (default)
   --low_pass low_pass   Low pass filter cut off in Hertz.
   --detrend             Whether to temporally detrend the data.
   --smoothing_fwhm smoothing_fwhm
-                        Smoothing kernel FWHM (in mm) if spatial smoothing is
-                        desired.
+                        Smoothing kernel FWHM (in mm) if spatial
+                        smoothing is desired.
   --discard_scans discard_scans
-                        Discard the first N scans of each functional NIfTI
-                        image.
+                        Discard the first N scans of each functional
+                        NIfTI image.
   --n_jobs n_jobs       The number of CPUs to use if parallelization is
                         desired. Default is 1 (serial processing).
   -c config, --config config
-                        Configuration .json file as an alternative to command-
-                        line arguments. See online documentation for what keys
-                        to include.
+                        Configuration .json file as an alternative to
+                        command-line arguments. See online documentation
+                        for what keys to include.
+
 ```
 
 Many of the parameters map directly onto the Masker function arguments in `nilearn` (see the [documentation](https://nilearn.github.io/modules/reference.html#module-nilearn.input_data) and [user guide](https://nilearn.github.io/building_blocks/manual_pipeline.html#masking) for more detail). Additionally, `--discard_scans` lets you remove the first *N* scans of your data prior to extraction, `--as_voxels` lets you get individual voxel timeseries when using a single ROI, and `--labels` lets you label your ROIs instead of just using the numerical indices. Furthermore, specifying `--n_jobs` parallelizes the extraction to reduce runtime.
@@ -184,8 +194,7 @@ Instead of passing all of the parameters through the command-line, `niimasker` a
   "mask_img": null,
   "labels": [],
   "regressor_files": null,
-  "regressor_names": [],
-  "denoising_strategy": [],
+  "regressors": [],
   "as_voxels": false,
   "sphere_size": null,
   "allow_overlap": false,
@@ -214,7 +223,7 @@ Where `config.json` is:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params6",
+  "regressors": "Params6",
   "t_r": 2,
   "high_pass": 0.01,
   "smoothing_fwhm": 6
@@ -291,7 +300,7 @@ Each iteration changes the ROI and output directory, but the configuration is th
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params6",
+  "regressors": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -335,7 +344,7 @@ Using the above example, we can replace the NIfTI atlas file with the following:
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params6",
+  "regressors": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
@@ -365,7 +374,7 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
     "confounds1.tsv",
     "confounds2.tsv"
   ],
-  "denoising_strategy": "Params6",
+  "regressors": "Params6",
   "radius": 6,
   "allow_overlap": true,
   "standardize": true,
@@ -380,6 +389,21 @@ A tab-delimited `.tsv` file containing coordinates can be passed into `roi_file`
 **Note:** A big drawback of placing spheres on coordinates is that the regions are an artificial shape, and will likely include voxels from unwanted sources such as white matter, CSF and non-brain voxels. Passing a gray matter mask to `mask_img` (`-m` or `--mask_img`) will prevent this problem by taking the intersection of the mask and the spheres generated by niimasker/nilearn. Doing so will ensure that each region you are extracting from will contain only gray matter (and therefore many, if not all, spheres will no longer be spheres). It is recommended to use subject-specific masks, such as those generated by Freesurfer. In this case, you will need to run niimasker separately for each subject (see *Working with single ROI masks* for an example python script that iteratively runs niimasker).
 
 The spheres, or the resulting sphere intersects if `mask_img` is used, are saved to `niimasker_data/spheres_img.nii.gz`.
+
+## Using confound regressors
+
+Often times you want to use a set of confound regressors (e.g., head motion parameters) to denoise the timeseries data for connectivity analyses. These confound regressors can be passed into niimasker with the `regressor_files` parameter, in which each regressor file should have a corresponding functional image in `input_files`. Both `regressor_files` and `input_files` are naturally sorted within niimasker. If  these file sets follow the same file naming prefix, they should be in the same order. **Always** check the corresponding regressor file is used with the input file (see the generated report or `parameters.json`). 
+
+With `regressor_files` provided, subsets of regressors can be specified using `regressors` (do not use `regressor_names`, it is now deprecated). `regressors` can be column headers of the `regressor_files` if all headers are present in every file. Or, you can simply pass the name of a predefined confound strategy defined by [load_confounds](https://github.com/SIMEXP/load_confounds). These currently include:
+*  `Params2` : Mean white matter and CSF signals, with high-pass filter.
+*  `Params6` : Basic motion parameters with high pass filter.
+*  `Params9` : Basic motion parameters, WM/CSF signals, global signal and high pass filter.
+*  `Params24` : Full motion parameters (derivatives, squares and squared derivatives), with high pass filter.
+*  `Params36` : Motion parameters, WM/CSF signals, global signal, high pass filter. All noise components are fully expanded (derivatives, squares and squared derivatives).
+*  `AnatCompCor` : Motion parameters (fully expanded), high pass filter, and acompcor.
+*  `TempCompCor` : High pass filter, and tcompcor. 
+
+Note that regressor files must have the appropriate column names for these strategies to work. If your data is from `fmriprep` (see below), then the above strategies will automatically work. 
 
 ## Working with fmriprep data
 
@@ -401,7 +425,7 @@ Thanks to the BIDS structure of the data, you can provide wildcard patterns for 
   "roi_file": "some_atlas.nii.gz",
   "labels": ["region1", "region2", "region2"],
   "regressor_files": "fmriprep/sub*/ses*/func/*confounds_regressors.tsv",
-  "denoising_strategy": "Params6",
+  "regressors": "Params6",
   "standardize": true,
   "t_r": 2,
   "high_pass": 0.01,
