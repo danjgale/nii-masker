@@ -31,7 +31,7 @@ setup(
         'nibabel>=3.2.0',
         'nilearn>=0.5.0',
         'natsort>=7.1.1',
-        'scipy>=1.6.1',
+        'scipy>=1.5.0',
         'scikit-learn>=0.24.1',
         'matplotlib>=3.3.0',
         'jinja2>=2.11.3'
