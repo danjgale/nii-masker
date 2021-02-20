@@ -2,6 +2,7 @@
 """
 import sys
 import os
+import warnings
 import argparse
 import json
 import glob
@@ -72,14 +73,22 @@ def _cli_parser():
                              'files are naturally sorted by file name prior to '
                              'extraction. Double check to make sure these are '
                              'correctly aligned with the input NIfTI files.')
+    parser.add_argument('--regressors', nargs='+', type=str,
+                        metavar='regressors',
+                        help='Regressor names or strategy to use for confound '
+                             'regression. Must be a) list of specified column '
+                             'names in all of the regressor_files, b) a '
+                             'predefined strategy by load_confounds, or c) a '
+                             'list compatible with load_confounds flexible '
+                             'denoising strategy options. See the documentation '
+                             'https://github.com/SIMEXP/load_confounds. If no '
+                             'regressor information provided, then all '
+                             'regressors in regressor_files are used. ')
     parser.add_argument('--regressor_names', nargs='+', type=str,
                         metavar='regressor_names',
-                        help='The regressor names to use for confound '
-                             'regression. Applies to all regressor files and '
-                             'the names must correspond to headers in each '
-                             'file. If no regressor names are provided, but '
-                             'files are, all regressors in regressor files '
-                             'are used.')
+                        help='Deprecated and will be removed in future '
+                             'versions. To define specific regressors, please '
+                             'use --regressors.')
     parser.add_argument('--as_voxels', default=False,
                         action='store_true',
                         help='Whether to extract out the timeseries of each '
@@ -137,7 +146,6 @@ def _check_glob(x):
         raise ValueError('Input data files (NIfTIs and confounds) must be a'
                          'string or list of string')
 
-
 def _empty_to_None(x):
     """Replace an empty list from params with None"""
     if isinstance(x, list):
@@ -145,14 +153,24 @@ def _empty_to_None(x):
             x = None
     return x
 
-
 def _check_params(params):
     """Ensure that required fields are included and correctly formatted"""
 
     # convert empty list parameters to None 
     params['labels'] = _empty_to_None(params['labels'])
-    params['regressor_names'] = _empty_to_None(params['regressor_names'])
+    print(params['regressor_files'])
     params['regressor_files'] = _empty_to_None(params['regressor_files'])
+
+    # coerce to list in case a string is provided by config file
+    if isinstance(params['regressors'], str):
+        params['regressors'] = [params['regressors']]
+    params['regressors'] = _empty_to_None(params['regressors'])
+
+    # remove deprecated regressor_names
+    if params['regressor_names']:
+        warnings.warn('WARNING: `regressor_names` is deprecated. Regressors '
+                      'will not be used. Please use `regressors`') 
+    params.pop('regressor_names')
 
     if params['input_files'] is None:
         raise ValueError('Missing input files. Check files')
@@ -193,7 +211,6 @@ def _merge_params(cli, config):
     # update CLI params with configuration; overwrites
     params = dict(list(cli.items()) + list(config.items()))
     return params
-
 
 def main():
     """Primary entrypoint in program"""

@@ -4,17 +4,31 @@ series data.
 
 import os
 import warnings
-from itertools import repeat
 import multiprocessing
+import load_confounds
 import numpy as np
 import pandas as pd
 import nibabel as nib
+from itertools import repeat
 from nilearn.image import load_img, math_img, resample_to_img
-from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker, 
-                                NiftiSpheresMasker)
+from nilearn.input_data import (NiftiMasker, NiftiLabelsMasker,NiftiSpheresMasker)
 from nilearn.input_data.nifti_spheres_masker import _apply_mask_and_get_affinity
-
 from niimasker.report import generate_report
+
+
+def _load_from_strategy(denoiser, fname):
+    """Verifies if load_confounds strategy is useable given the regressor files.
+    load_confounds will raise it's own exception, but add an additional 
+    niimasker-specific exception that clarifies the incompatibility.
+    """ 
+    error_msg = ('load_confound strategy incompatible with provided regressor '
+                 'files. Check regressor files if they contain the appropriate '
+                 'columns determined by load_confounds.')
+    try:
+        confounds = denoiser.load(fname)
+        return pd.DataFrame(confounds, columns=denoiser.columns_)
+    except ValueError as e:
+        raise ValueError(error_msg) from e
 
 
 class FunctionalImage(object):
@@ -26,16 +40,44 @@ class FunctionalImage(object):
 
         self.regressors = None
         self.regressor_file = None
+                    
+    def set_regressors(self, regressor_fname, regressor_input=None):
+        """Set appropriate regressors."""
 
-    def set_regressors(self, regressor_fname, regressor_labels=None):
-        """Create regressors for masking"""
-        self.regressor_file = regressor_fname
-        all_regressors = pd.read_csv(regressor_fname, sep=r'\t',
-                                     engine='python')
-        if regressor_labels is not None:
-            self.regressors = all_regressors[regressor_labels]
+        # specific strategies for load_confounds
+        strategies = ['Params2', 'Params6', 'Params9', 'Params24', 'Params36', 
+                    'AnatCompCor', 'TempCompCor'] 
+        flexible_strategies = ['motion', 'high_pass', 'wm_csf', 'compcor', 
+                               'global']
+
+        if regressor_input is None:
+            # use all regressors from file
+            regressors = pd.read_csv(regressor_fname, sep=r'\t')
+        elif len(regressor_input) == 1 and (regressor_input[0] in strategies):
+            # predefined strategy
+            denoiser = eval('load_confounds.{}()'.format(regressor_input[0]))
+            regressors = _load_from_strategy(denoiser, regressor_fname)
+        elif set(regressor_input) <= set(flexible_strategies):
+            # flexible strategy
+            denoiser = load_confounds.Confounds(strategy=regressor_input)
+            regressors = _load_from_strategy(denoiser, regressor_fname)
+        elif all([x not in strategies + flexible_strategies 
+                  for x in regressor_input]):
+            # list of regressor names
+            try:
+                regressors = pd.read_csv(regressor_fname, sep='\t', 
+                                         usecols=regressor_input)
+            except ValueError as e:
+                msg = 'Not all regressors are found in regressor file'
+                raise ValueError(msg) from e
         else:
-            self.regressors = all_regressors
+            raise ValueError('Invalid regressors. Regressors must be a list of '
+                             'column names that appear in regressor_files, OR a '
+                             'defined load_confounds regressor strategy (flexible '
+                             'or non-flexible).')
+
+        self.regressor_file = regressor_fname
+        self.regressors = regressors
 
 
     def discard_scans(self, n_scans):
@@ -51,7 +93,7 @@ class FunctionalImage(object):
 
     def extract(self, masker, as_voxels=False, labels=None):
         print('  Extracting from {}'.format(os.path.basename(self.fname)))
-
+        
         if self.regressors is None:
             timeseries = masker.fit_transform(self.img)
         else:
@@ -82,11 +124,8 @@ class FunctionalImage(object):
 
 
 ## MASKING FUNCTIONS
-
-
 def _get_spheres_from_masker(masker, img):
     """Re-extract spheres from coordinates to make niimg. 
-
     Note that this will take a while, as it uses the exact same function that
     nilearn calls to extract data for NiftiSpheresMasker
     """
@@ -178,18 +217,23 @@ def _set_masker(roi_file, as_voxels=False, **kwargs):
             raise ValueError('No ROI detected; check ROI file')
     
     return masker
-                
-    
-def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
-                   regressor_names=None, as_voxels=False,
-                   labels=None, discard_scans=None):
+
+
+def _mask_and_save(masker, img_name, output_dir, regressor_file=None, 
+                   regressors=None, as_voxels=False, labels=None, 
+                   discard_scans=None):
     """Runs the full masking process and saves output for a single image;
     the main function used by `make_timeseries`
     """
     img = FunctionalImage(img_name)
 
-    if regressor_file is not None:
-        img.set_regressors(regressor_file, regressor_names)
+    if regressor_file:
+        img.set_regressors(regressor_file, regressors)
+    elif (regressor_file is None) and regressors:
+        warnings.warn('Regressors are provided without regressor_file. No '
+                      'confound regression can be done')
+
+
     if discard_scans is not None:
         if discard_scans > 0:
             img.discard_scans(discard_scans)
@@ -204,9 +248,8 @@ def _mask_and_save(masker, img_name, output_dir, regressor_file=None,
 
 
 def make_timeseries(input_files, roi_file, output_dir, labels=None,
-                    regressor_files=None, regressor_names=None,
-                    as_voxels=False, discard_scans=None,
-                    n_jobs=1, **masker_kwargs):
+                    regressor_files=None, regressors=None, as_voxels=False, 
+                    discard_scans=None, n_jobs=1, **masker_kwargs):
     """Extract timeseries data from input files using an roi file to demark
     the region(s) of interest(s). This is the main function of this module.
 
@@ -226,8 +269,10 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     regressor_files : list of str, optional
         Confound .csv files for each run. Default is None
     regressors : list of str, optional
-        Regressor names to select from `regressor_files` headers. Default is
-        None
+        Either a) list of regressor names to select from `regressor_files` 
+        headers, b) a predefined load_confounds strategy, or c) a list of flexibe
+        load_confounds strategies. If none, all regressors in `regressor_files`
+        are used. Default isNone
     as_voxels : bool, optional
         Extract out individual voxel timecourses rather than mean timecourse of
         the ROI, by default False. NOTE: This is only available for binary masks,
@@ -248,7 +293,8 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     # create and save spheres image if coordinates are provided
     if isinstance(masker, NiftiSpheresMasker):
         masker.spheres_img = _get_spheres_from_masker(masker, input_files[0])
-        masker.spheres_img.to_filename(os.path.join(output_dir, 'niimasker_data',
+        masker.spheres_img.to_filename(os.path.join(output_dir, 
+                                                    'niimasker_data', 
                                                     'spheres_image.nii.gz'))
 
     # set as list of NoneType if no regressor files; makes it easy for
@@ -260,7 +306,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
     if n_jobs == 1:
         for i, img in enumerate(input_files):
             _mask_and_save(masker, img, output_dir, regressor_files[i],
-                           regressor_names, as_voxels, labels, discard_scans)
+                           regressors, as_voxels, labels, discard_scans)
     else:
         # repeat parameters are held constant for all parallelized iterations
         args = zip(
@@ -268,7 +314,7 @@ def make_timeseries(input_files, roi_file, output_dir, labels=None,
             input_files, # iterate over
             repeat(output_dir),
             regressor_files, # iterate over, paired with input_files
-            repeat(regressor_names),
+            repeat(regressors),
             repeat(as_voxels),
             repeat(labels),
             repeat(discard_scans)
