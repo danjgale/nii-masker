@@ -5,9 +5,9 @@ language: python
 
 # which versions of python to test
 python:
-  - 3.5
   - 3.6
   - 3.7
+  - 3.8
 
 # install the nii-masker package
 install:
