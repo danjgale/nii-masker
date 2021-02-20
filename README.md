@@ -1,5 +1,8 @@
 # nii-masker
 
+**NOTE: nii-masker has migrated to [nixtract](https://github.com/danjgale/nixtract). This repository is no longer maintained. Please use nixtract instead**
+
+
 <p align="center">
   <img src="resources/logo.png" alt="logo" width="500"/>
 </p>
