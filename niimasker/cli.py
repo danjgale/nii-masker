@@ -158,7 +158,6 @@ def _check_params(params):
 
     # convert empty list parameters to None 
     params['labels'] = _empty_to_None(params['labels'])
-    print(params['regressor_files'])
     params['regressor_files'] = _empty_to_None(params['regressor_files'])
 
     # coerce to list in case a string is provided by config file
